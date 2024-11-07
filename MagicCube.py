@@ -1,10 +1,15 @@
 import random
 
-class MagicCube:
-    def __init__(self):
-        self.size = 5
-        self.cube = self.create_random_cube()
-        self.magic_number = 315  # sum of each line should be 315
+class MagicCube(object):
+    def __init__(self, cube=None):
+        if cube is None:
+            self.size = 5
+            self.cube = self.create_random_cube()
+        else:
+            self.size = 5
+            self.cube = cube
+        self.magic_number = 315                # sum of each line should be 315
+        self.value = self.calculate_value()    # Store the calculated value as an attribute
 
     def create_random_cube(self):
         numbers = list(range(1, 126))  # 1 to 125 for 5x5x5 cube
@@ -76,8 +81,8 @@ class MagicCube:
         return value
 
     def copy_cube(self, cube):
-        return [[[cube[i][j][k] for k in range(self.size)] 
-                 for j in range(self.size)] 
+        return [[[cube[i][j][k] for k in range(self.size)]
+                 for j in range(self.size)]
                  for i in range(self.size)]
 
     def swap_positions(self, cube, pos1, pos2):
@@ -97,10 +102,10 @@ class MagicCube:
             pos2 = (random.randint(0, 4), random.randint(0, 4), random.randint(0, 4))
             while pos1 == pos2:
                 pos2 = (random.randint(0, 4), random.randint(0, 4), random.randint(0, 4))
-            return self.swap_positions(self.cube, pos1, pos2)
+            return MagicCube(new_cube)
         
         elif mode == "best":
-            current_value = self.calculate_value()
+            current_value = self.value  # Use the stored value
             best_value = current_value
             best_cube = self.copy_cube(self.cube)
             best_pos1 = None
@@ -117,9 +122,7 @@ class MagicCube:
                                     if (i1, j1, k1) >= (i2, j2, k2):
                                         continue
                                     
-                                    total_checked += 1
-                                    # if total_checked % 1000 == 0:
-                                    #    print(f"Checked {total_checked} swaps... Current best: {best_value}")
+                                    # total_checked += 1
                                     
                                     # swap position
                                     new_cube = self.swap_positions(self.cube, (i1, j1, k1), (i2, j2, k2))
@@ -128,23 +131,12 @@ class MagicCube:
                                     if value > best_value:
                                         best_value = value
                                         best_cube = new_cube
-                                        best_pos1 = (i1, j1, k1)
-                                        best_pos2 = (i2, j2, k2)
-                                        # print(f"\nFound better solution!")
-                                        # print(f"Swapped positions: ({i1},{j1},{k1}) <-> ({i2},{j2},{k2})")
-                                        # print(f"Values swapped: {self.get_position_value(i1,j1,k1)} <-> {self.get_position_value(i2,j2,k2)}")
-                                        # print(f"New value: {value}\n")
+                                        # best_pos1 = (i1, j1, k1)
+                                        # best_pos2 = (i2, j2, k2)
             
-            # print(f"\nSearch completed!")
-            # print(f"Total positions checked: {total_checked}")
-            # if best_value > current_value:
-            #    print(f"Best improvement found: +{best_value - current_value}")
-            #    print(f"Final value: {best_value}")
-            #    print(f"Best swap: {best_pos1} <-> {best_pos2}")
-            # else:
-            #    print("No better solution found")
-            
-            return best_cube
+            # print(best_pos1)
+            # print(best_pos2)
+            return MagicCube(best_cube)
 
     def print_cube(self):
         print("\nCurrent Cube State:")
@@ -152,16 +144,8 @@ class MagicCube:
             print(f"\nLayer {i+1}:")
             for row in self.cube[i]:
                 print([f"{x:3d}" for x in row])
-        print(f"\nCurrent Value: {self.calculate_value()}")
-        if self.calculate_value() == 109:  # Total possible lines that should sum to 315
+        print(f"\nCurrent Value: {self.value}")
+        if self.value == 109:  # Total possible lines that should sum to 315
             print("Congratulations! Magic cube solved!")
         else:
             print("Magic cube not yet solved.")
-
-
-# M = MagicCube()
-# M.print_cube()
-
-# new_cube = M.get_successor("best")
-# M.cube = new_cube
-# M.print_cube()
