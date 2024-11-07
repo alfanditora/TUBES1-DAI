@@ -159,9 +159,9 @@ class MagicCube:
             print("Magic cube not yet solved.")
 
 
-M = MagicCube()
-M.print_cube()
+# M = MagicCube()
+# M.print_cube()
 
-new_cube = M.get_successor("best")
-M.cube = new_cube
-M.print_cube()
+# new_cube = M.get_successor("best")
+# M.cube = new_cube
+# M.print_cube()
