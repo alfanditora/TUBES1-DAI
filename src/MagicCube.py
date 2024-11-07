@@ -108,9 +108,9 @@ class MagicCube(object):
             current_value = self.value  # Use the stored value
             best_value = current_value
             best_cube = self.copy_cube(self.cube)
-            best_pos1 = None
-            best_pos2 = None
-            total_checked = 0
+            # best_pos1 = None
+            # best_pos2 = None
+            # total_checked = 0
             
             for i1 in range(self.size):
                 for j1 in range(self.size):
