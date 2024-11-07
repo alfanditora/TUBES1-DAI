@@ -102,6 +102,8 @@ class MagicCube(object):
             pos2 = (random.randint(0, 4), random.randint(0, 4), random.randint(0, 4))
             while pos1 == pos2:
                 pos2 = (random.randint(0, 4), random.randint(0, 4), random.randint(0, 4))
+                
+            new_cube = self.swap_positions(self.cube, pos1, pos2)
             return MagicCube(new_cube)
         
         elif mode == "best":
