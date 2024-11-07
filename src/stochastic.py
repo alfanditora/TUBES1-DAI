@@ -1,30 +1,29 @@
 from MagicCube import MagicCube
 import matplotlib.pyplot as plt
 
-class steepest_ascent(object):
-    def __init__(self):
+class stochastic(object):
+    def __init__(self, max_iterations=10000):
+        self.max_iterations = max_iterations
         self.list_of_value = []
-
+    
     def run(self):
         current = MagicCube()
         self.list_of_value.append(current.value)
         current.print_cube()
-        i = 0
+        it = 0
 
-        while True:
-            successor = current.get_successor("best")
-            if current.value == 109:
+        for i in range(self.max_iterations):
+            successor = current.get_successor("random")
+            if (current.value == 109):
                 break
-            if successor.value <= current.value:
-                break
-            else:
-                self.list_of_value.append(current.value)
+            if successor.value > current.value:
                 current = successor
+                self.list_of_value.append(current.value)
                 
-            i += 1
+            it += 1
 
         current.print_cube()
-        print(i)
+        print(it)
         self.makePlot()
 
     def makePlot(self):
@@ -37,5 +36,5 @@ class steepest_ascent(object):
         plt.show()
 
 if __name__ == "__main__":
-    H = steepest_ascent()
-    H.run()
+    SH = stochastic()
+    SH.run()
