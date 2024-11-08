@@ -3,7 +3,7 @@ import time
 import matplotlib.pyplot as plt
 from typing import List, Tuple
 from itertools import combinations
-from newMC1 import MagicCube
+from MagicCube import MagicCube
 
 class GeneticAlgorithmCube:
     def __init__(self, population_size=1000, base_mutation_probability=0.07, iterations=1000):
