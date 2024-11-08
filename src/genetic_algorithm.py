@@ -3,7 +3,7 @@ import time
 import matplotlib.pyplot as plt
 from typing import List, Tuple
 from itertools import combinations
-from newMC1 import MagicCube
+from MagicCube import MagicCube
 
 class GeneticAlgorithmCube:
     def __init__(self, population_size=1000, base_mutation_probability=0.07, iterations=1000):
@@ -17,9 +17,17 @@ class GeneticAlgorithmCube:
         self.mutation_increase_rate = 0.05
         self.avg_fitness_history = []
         self.best_fitness_history = []
+        self.start_time = None
+        self.execution_time = None
+        self.initial_state = None
+        self.final_state = None
+        self.initial_fitness = None
+        self.final_fitness = None
 
     def run(self, init_state):
-        start_time = time.time()
+        self.start_time = time.time()
+        self.initial_state = init_state
+        self.initial_fitness = init_state.value
         
         population: List[MagicCube] = []
         population.append(init_state)
@@ -59,15 +67,12 @@ class GeneticAlgorithmCube:
                 best_fitness = current_best_fitness
                 self._reset_mutation_rate()
 
-            if (i + 1) % 50 == 0:
-                print(f"Iterasi {i+1}: Nilai Terbaik: {best_fitness}/109, Rata-rata: {avg_fitness:.2f}")
-                print("\nKubus terbaik saat ini:")
-                best_individual.print_cube()
-
             if best_fitness == 109:
-                end_time = time.time()
+                self.execution_time = time.time() - self.start_time
+                self.final_state = best_individual
+                self.final_fitness = best_fitness
                 print(f"\nSolusi ditemukan pada iterasi {i+1}")
-                print(f"Durasi proses: {end_time - start_time:.2f} detik")
+                print(f"Durasi proses: {self.execution_time:.2f} detik")
                 self.plot_progress()
                 return best_individual, best_fitness, i + 1
 
@@ -76,10 +81,13 @@ class GeneticAlgorithmCube:
             population = self._crossover(population)
             population = self._mutation(population)
 
-        end_time = time.time()
-        print(f"Durasi proses: {end_time - start_time:.2f} detik")
+        self.execution_time = time.time() - self.start_time
+        self.final_state = best_individual
+        self.final_fitness = best_fitness
+        print(f"Durasi proses: {self.execution_time:.2f} detik")
         self.plot_progress()
         return best_individual, best_fitness, self.iterations
+
 
     def _increase_mutation_rate(self):
         self.current_mutation_rate = min(
@@ -91,14 +99,39 @@ class GeneticAlgorithmCube:
         self.current_mutation_rate = self.base_mutation_probability
 
     def plot_progress(self):
-        plt.figure(figsize=(12, 6))
-        plt.plot(self.best_fitness_history, label='Nilai Terbaik')
-        plt.plot(self.avg_fitness_history, label='Rata-rata Populasi')
-        plt.xlabel('Iterasi')
-        plt.ylabel('Nilai Fitness')
-        plt.title('Progress Optimasi Magic Cube')
-        plt.legend()
-        plt.grid(True)
+
+        fig = plt.figure(figsize=(15, 10))
+        
+
+        ax1 = plt.subplot(2, 1, 1)
+        ax1.plot(self.best_fitness_history, label='Nilai Terbaik', color='blue')
+        ax1.plot(self.avg_fitness_history, label='Rata-rata Populasi', color='green')
+        ax1.set_xlabel('Iterasi')
+        ax1.set_ylabel('Nilai Fitness')
+        ax1.set_title('Progress Optimasi Magic Cube')
+        ax1.legend()
+        ax1.grid(True)
+
+
+        info_text = (
+            f'Informasi Optimasi:\n'
+            f'Populasi: {self.population_size}\n'
+            f'Total Iterasi: {len(self.best_fitness_history)}\n'
+            f'Durasi: {self.execution_time:.2f} detik\n'
+            f'Nilai Awal: {self.initial_fitness}/109\n'
+            f'Nilai Akhir: {self.final_fitness}/109'
+        )
+        
+        plt.figtext(0.15, 0.15, info_text, 
+                   bbox=dict(facecolor='white', alpha=0.8, edgecolor='gray'),
+                   fontsize=10, 
+                   family='monospace')
+
+
+        ax2 = plt.subplot(2, 1, 2)
+        ax2.axis('off')
+
+        plt.tight_layout()
         plt.show()
 
     def _calculate_fitness(self, population: List[MagicCube]) -> np.ndarray:
@@ -234,8 +267,8 @@ class GeneticAlgorithmCube:
         return mutated
     
 def main():
-    population_size = 300
-    max_iterations = 1000
+    population_size = 150
+    max_iterations = 100
     
     ga = GeneticAlgorithmCube(
         population_size=population_size,
