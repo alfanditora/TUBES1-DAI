@@ -13,7 +13,7 @@ class random_restart_hill_climbing(object):
         self.end_time = 0
 
     def hill_climbing(self, current: MagicCube) -> Tuple[MagicCube, int]:
-        """Performs hill climbing from a given starting state"""
+
         iterations = 0
         self.list_of_value.append(current.value)
 
@@ -28,7 +28,7 @@ class random_restart_hill_climbing(object):
         return current, iterations
 
     def run(self) -> None:
-        """Runs the random restart hill climbing algorithm"""
+
         self.start_time = time.time()
 
         best_cube = MagicCube()
@@ -49,7 +49,7 @@ class random_restart_hill_climbing(object):
 
             self.num_restarts += 1
 
-            if best_value == 109:  # Found optimal solution
+            if best_value == 109:
                 break
 
         self.end_time = time.time()
@@ -65,7 +65,7 @@ class random_restart_hill_climbing(object):
         self.makePlot()
 
     def makePlot(self) -> None:
-        """Creates a plot showing the objective function value over iterations"""
+
         plt.figure(figsize=(12, 6))
         plt.plot(list(range(len(self.list_of_value))), self.list_of_value)
         plt.title("Magic Cube Value over Iterations (Random Restart Hill Climbing)")
@@ -75,7 +75,7 @@ class random_restart_hill_climbing(object):
         plt.show()
 
 def run_experiment(num_trials: int = 3) -> None:
-    """Runs multiple trials of the algorithm and collects statistics"""
+
     print(f"Running {num_trials} trials of Random Restart Hill Climbing")
     print("-" * 50)
 
