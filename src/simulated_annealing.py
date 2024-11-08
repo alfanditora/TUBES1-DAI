@@ -6,7 +6,7 @@ import numpy as np
 from MagicCube import MagicCube
 
 class SimulatedAnnealing:
-    def __init__(self, initial_temp=500000.0, cooling_rate=0.9999, min_temp=0.001, max_iterations=500000):
+    def __init__(self, initial_temp=750000.0, cooling_rate=0.9999, min_temp=0.0005, max_iterations=500000):
         self.initial_temp = initial_temp
         self.cooling_rate = cooling_rate
         self.min_temp = min_temp
@@ -17,7 +17,7 @@ class SimulatedAnnealing:
         self.temperatures = []
         self.exp_deltaE_T = []
         self.stuck_count = 0
-        self.stuck_threshold = 100000
+        self.stuck_threshold = 150000
         self.duration = 0
         
         # States
@@ -29,8 +29,8 @@ class SimulatedAnnealing:
             return 1.0
         
         delta_E = neighbor_value - current_value
-        if temperature > self.initial_temp * 0.5:
-            prob = math.exp(delta_E / (temperature * 0.1))
+        if temperature > self.initial_temp * 0.7:  # Adjusted for better early exploration
+            prob = math.exp(delta_E / (temperature * 0.05))
         else:
             prob = math.exp(delta_E / temperature)
         
@@ -52,7 +52,7 @@ class SimulatedAnnealing:
         
         while temperature > self.min_temp and total_iterations < self.max_iterations:
             # Multiple attempts at each temperature level
-            for _ in range(200):
+            for _ in range(250):  # Increased attempts
                 if total_iterations >= self.max_iterations:
                     break
                     
@@ -61,7 +61,7 @@ class SimulatedAnnealing:
                 best_neighbor_value = float('-inf')
                 
                 # Try multiple neighbors
-                for _ in range(5):
+                for _ in range(8):  # Increased neighbor attempts
                     neighbor = current.get_successor("random")
                     if neighbor.value > best_neighbor_value:
                         best_neighbor = neighbor
@@ -92,24 +92,30 @@ class SimulatedAnnealing:
             # Check if stuck
             if iterations_without_improvement >= self.stuck_threshold:
                 self.stuck_count += 1
-                if best.value < 20:
-                    temperature = self.initial_temp * 0.9
-                elif best.value < 40:
-                    temperature = self.initial_temp * 0.7
+                # Improved reheat strategy
+                if best.value < 30:
+                    temperature = self.initial_temp * 0.95  # More aggressive reheat
+                elif best.value < 50:
+                    temperature = self.initial_temp * 0.8
                 else:
-                    temperature = self.initial_temp * 0.5
+                    temperature = self.initial_temp * 0.6
                 
                 iterations_without_improvement = 0
                 plateau_count = 0
                 
+                # Return to best state with controlled random modifications
                 current = MagicCube(best.cube)
-                for _ in range(3):  # Reduced random modifications
+                modifications = max(2, min(5, int(50 - best.value)))  # Adaptive modifications
+                for _ in range(modifications):
                     current = current.get_successor("random")
             else:
-                if plateau_count > 5000:  # Reduced plateau threshold
-                    temperature *= (self.cooling_rate ** 2)
-                elif best.value > 40:
-                    temperature *= (self.cooling_rate ** 0.5)
+                # Adaptive cooling strategy
+                if plateau_count > 7500:  # Adjusted plateau threshold
+                    temperature *= (self.cooling_rate ** 1.5)  # Faster cooling in plateaus
+                elif best.value > 50:
+                    temperature *= (self.cooling_rate ** 0.25)  # Much slower cooling for good solutions
+                elif best.value > 30:
+                    temperature *= (self.cooling_rate ** 0.5)  # Slower cooling for decent solutions
                 else:
                     temperature *= self.cooling_rate
         
@@ -125,9 +131,9 @@ def run_experiments(n_experiments=3):
         print(f"\nRunning experiment {exp+1}/{n_experiments}")
         
         sa = SimulatedAnnealing(
-            initial_temp=500000.0,
+            initial_temp=750000.0,
             cooling_rate=0.9999,
-            min_temp=0.001,
+            min_temp=0.0005,
             max_iterations=500000
         )
         
