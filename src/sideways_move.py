@@ -2,12 +2,14 @@ from MagicCube import MagicCube
 import matplotlib.pyplot as plt
 import time
 
-class steepest_ascent(object):
-    def __init__(self):
+class sideways_move(object):
+    def __init__(self, max_sideways_moves = 100):
         self.list_of_value = []
+        self.max_sideways_moves = max_sideways_moves
         self.iteration = 0
         self.duration = 0
-
+        self.total_sideways = 0
+    
     def run(self):
         start_time = time.time()
 
@@ -15,24 +17,31 @@ class steepest_ascent(object):
         self.list_of_value.append(current.value)
         current.print_cube()
         i = 0
+        sideways_moves = 0
 
-        while True:
+        while True and sideways_moves < self.max_sideways_moves:
             successor = current.get_successor("best")
+    
             if current.value == 109:
                 break
-            if successor.value <= current.value:
+            if successor.value == current.value:
+                sideways_moves += 1
+            elif successor.value < current.value:
                 break
             else:
-                current = successor
-            self.list_of_value.append(current.value)
+                sideways_moves = 0
                 
+            self.list_of_value.append(successor.value)
+            current = successor
             i += 1
 
         current.print_cube()
         self.duration = time.time() - start_time
         self.iteration = i
+        self.total_sideways = sideways_moves
         print(self.duration)
         print(self.iteration)
+        print(f"Total sideways moves: {sideways_moves}")
         self.makePlot()
 
     def makePlot(self):
@@ -51,6 +60,7 @@ class steepest_ascent(object):
             f"Initial Value: {self.list_of_value[0]}\n"
             f"Final Value: {self.list_of_value[-1]}\n"
             f"Total Iterations: {self.iteration}\n"
+            f"Total sideways: {self.total_sideways}\n"
             f"Duration: {self.duration:.2f} seconds"
         )
         plt.text(0.1, 0.5, info_text, fontsize=12, verticalalignment='center')
@@ -58,7 +68,6 @@ class steepest_ascent(object):
         plt.tight_layout()
         plt.show()
 
-
 if __name__ == "__main__":
-    H = steepest_ascent()
-    H.run()
+    S = sideways_move()
+    S.run()
