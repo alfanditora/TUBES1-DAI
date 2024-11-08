@@ -6,7 +6,7 @@ import numpy as np
 from MagicCube import MagicCube
 
 class SimulatedAnnealing:
-    def __init__(self, initial_temp=10000.0, cooling_rate=0.999, min_temp=0.1, max_iterations=100000):
+    def __init__(self, initial_temp=100000.0, cooling_rate=0.9999, min_temp=0.01, max_iterations=500000):
         self.initial_temp = initial_temp
         self.cooling_rate = cooling_rate
         self.min_temp = min_temp
@@ -17,7 +17,7 @@ class SimulatedAnnealing:
         self.temperatures = []
         self.exp_deltaE_T = []
         self.stuck_count = 0
-        self.stuck_threshold = 10000
+        self.stuck_threshold = 50000  # Increased for better exploration
         self.duration = 0
         
         # States
@@ -44,10 +44,11 @@ class SimulatedAnnealing:
         temperature = self.initial_temp
         iterations_without_improvement = 0
         total_iterations = 0
+        last_improvement_value = current.value
         
         while temperature > self.min_temp and total_iterations < self.max_iterations:
             # Multiple attempts at each temperature level
-            for _ in range(50):
+            for _ in range(100):  # Increased attempts per temperature
                 if total_iterations >= self.max_iterations:
                     break
                     
@@ -62,6 +63,7 @@ class SimulatedAnnealing:
                     if current.value > best.value:
                         best = MagicCube(current.cube)
                         iterations_without_improvement = 0
+                        last_improvement_value = current.value
                     else:
                         iterations_without_improvement += 1
                 else:
@@ -76,12 +78,24 @@ class SimulatedAnnealing:
             # Check if stuck
             if iterations_without_improvement >= self.stuck_threshold:
                 self.stuck_count += 1
-                # Reheat when stuck
-                temperature = self.initial_temp * 0.5
+                # Modified reheat strategy
+                if self.stuck_count % 3 == 0:
+                    # Major reheat every third stuck
+                    temperature = self.initial_temp * 0.7
+                else:
+                    # Minor reheat otherwise
+                    temperature *= 2
+                
                 iterations_without_improvement = 0
+                
+                # Revert to best solution when stuck
+                current = MagicCube(best.cube)
             else:
-                # Normal cooling
-                temperature *= self.cooling_rate
+                # Normal cooling with slower rate at lower temperatures
+                if temperature < self.initial_temp * 0.1:
+                    temperature *= (self.cooling_rate ** 0.5)  # Slower cooling at low temperatures
+                else:
+                    temperature *= self.cooling_rate
         
         self.final_state = best.cube
         self.duration = time.time() - start_time
@@ -96,10 +110,10 @@ def run_experiments(n_experiments=3):
         
         # Initialize with optimized parameters
         sa = SimulatedAnnealing(
-            initial_temp=10000.0,
-            cooling_rate=0.999,
-            min_temp=0.1,
-            max_iterations=100000
+            initial_temp=100000.0,  # Higher initial temperature
+            cooling_rate=0.9999,    # Much slower cooling
+            min_temp=0.01,          # Lower minimum temperature
+            max_iterations=500000    # More iterations
         )
         
         magic_cube = MagicCube()
@@ -136,11 +150,22 @@ def visualize_experiment(result):
     
     # Plot objective function
     plt.subplot(2, 2, 1)
-    plt.plot(result['objective_values'])
+    plt.plot(result['objective_values'], 'b-', alpha=0.6)
     plt.title('Objective Function Value vs Iterations')
     plt.xlabel('Iteration')
     plt.ylabel('Value')
     plt.grid(True)
+    
+    # Add moving average to objective function plot
+    window = 1000
+    if len(result['objective_values']) > window:
+        moving_avg = np.convolve(result['objective_values'], 
+                               np.ones(window)/window, 
+                               mode='valid')
+        plt.plot(range(window-1, len(result['objective_values'])), 
+                moving_avg, 'r-', linewidth=2, 
+                label=f'Moving Average (window={window})')
+        plt.legend()
     
     # Plot temperature
     plt.subplot(2, 2, 2)
@@ -149,6 +174,7 @@ def visualize_experiment(result):
     plt.xlabel('Iteration')
     plt.ylabel('Temperature')
     plt.grid(True)
+    plt.yscale('log')  # Log scale for better visualization
     
     # Plot e^(ΔE/T)
     plt.subplot(2, 2, 3)
@@ -187,16 +213,20 @@ def visualize_summary(results):
     # Plot final values
     plt.subplot(2, 2, 1)
     final_values = [r['final_value'] for r in results]
-    plt.bar(range(1, len(results) + 1), final_values)
+    plt.bar(range(1, len(results) + 1), final_values, color='skyblue')
     plt.title('Final Values Across Experiments')
     plt.xlabel('Experiment')
     plt.ylabel('Value')
     plt.grid(True)
     
+    # Add value labels on bars
+    for i, v in enumerate(final_values):
+        plt.text(i + 1, v, str(v), ha='center', va='bottom')
+    
     # Plot durations
     plt.subplot(2, 2, 2)
     durations = [r['duration'] for r in results]
-    plt.bar(range(1, len(results) + 1), durations)
+    plt.bar(range(1, len(results) + 1), durations, color='lightgreen')
     plt.title('Duration of Experiments')
     plt.xlabel('Experiment')
     plt.ylabel('Seconds')
@@ -205,7 +235,7 @@ def visualize_summary(results):
     # Plot stuck counts
     plt.subplot(2, 2, 3)
     stuck_counts = [r['stuck_count'] for r in results]
-    plt.bar(range(1, len(results) + 1), stuck_counts)
+    plt.bar(range(1, len(results) + 1), stuck_counts, color='salmon')
     plt.title('Times Stuck in Local Optima')
     plt.xlabel('Experiment')
     plt.ylabel('Count')
