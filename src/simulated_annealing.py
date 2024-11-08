@@ -6,7 +6,7 @@ import numpy as np
 from MagicCube import MagicCube
 
 class SimulatedAnnealing:
-    def __init__(self, initial_temp=100000.0, cooling_rate=0.9999, min_temp=0.01, max_iterations=500000):
+    def __init__(self, initial_temp=1000000.0, cooling_rate=0.99999, min_temp=0.0001, max_iterations=2000000):
         self.initial_temp = initial_temp
         self.cooling_rate = cooling_rate
         self.min_temp = min_temp
@@ -17,7 +17,7 @@ class SimulatedAnnealing:
         self.temperatures = []
         self.exp_deltaE_T = []
         self.stuck_count = 0
-        self.stuck_threshold = 50000  # Increased for better exploration
+        self.stuck_threshold = 200000  # Much higher threshold
         self.duration = 0
         
         # States
@@ -29,7 +29,14 @@ class SimulatedAnnealing:
             return 1.0
         
         delta_E = neighbor_value - current_value
-        prob = math.exp(delta_E / temperature)
+        # Modified acceptance probability for better exploration
+        if temperature > self.initial_temp * 0.5:
+            # More accepting at high temperatures
+            prob = math.exp(delta_E / (temperature * 0.1))
+        else:
+            # More selective at low temperatures
+            prob = math.exp(delta_E / temperature)
+        
         self.exp_deltaE_T.append(prob)
         return prob
     
@@ -44,26 +51,36 @@ class SimulatedAnnealing:
         temperature = self.initial_temp
         iterations_without_improvement = 0
         total_iterations = 0
-        last_improvement_value = current.value
+        plateau_count = 0
         
         while temperature > self.min_temp and total_iterations < self.max_iterations:
             # Multiple attempts at each temperature level
-            for _ in range(100):  # Increased attempts per temperature
+            for _ in range(500):  # Increased attempts per temperature
                 if total_iterations >= self.max_iterations:
                     break
                     
-                # Get random neighbor
-                neighbor = current.get_successor("random")
+                # Get multiple neighbors and select the best one
+                best_neighbor = None
+                best_neighbor_value = float('-inf')
+                
+                # Try multiple neighbors
+                for _ in range(10):
+                    neighbor = current.get_successor("random")
+                    if neighbor.value > best_neighbor_value:
+                        best_neighbor = neighbor
+                        best_neighbor_value = neighbor.value
                 
                 # Calculate acceptance probability
-                if self.accept_probability(current.value, neighbor.value, temperature) > random.random():
-                    current = neighbor
+                if self.accept_probability(current.value, best_neighbor.value, temperature) > random.random():
+                    current = best_neighbor
                     
                     # Update best if improved
                     if current.value > best.value:
                         best = MagicCube(current.cube)
                         iterations_without_improvement = 0
-                        last_improvement_value = current.value
+                        plateau_count = 0
+                    elif current.value == best.value:
+                        plateau_count += 1
                     else:
                         iterations_without_improvement += 1
                 else:
@@ -78,25 +95,34 @@ class SimulatedAnnealing:
             # Check if stuck
             if iterations_without_improvement >= self.stuck_threshold:
                 self.stuck_count += 1
-                # Modified reheat strategy
-                if self.stuck_count % 3 == 0:
-                    # Major reheat every third stuck
+                # Adaptive reheat strategy
+                if best.value < 20:
+                    # More aggressive reheat for low values
+                    temperature = self.initial_temp * 0.9
+                elif best.value < 40:
                     temperature = self.initial_temp * 0.7
                 else:
-                    # Minor reheat otherwise
-                    temperature *= 2
+                    temperature = self.initial_temp * 0.5
                 
+                # Reset counters
                 iterations_without_improvement = 0
+                plateau_count = 0
                 
-                # Revert to best solution when stuck
+                # Return to best state with some random modifications
                 current = MagicCube(best.cube)
+                for _ in range(5):
+                    current = current.get_successor("random")
             else:
-                # Normal cooling with slower rate at lower temperatures
-                if temperature < self.initial_temp * 0.1:
-                    temperature *= (self.cooling_rate ** 0.5)  # Slower cooling at low temperatures
+                # Adaptive cooling
+                if plateau_count > 10000:
+                    # Cool faster if stuck in plateau
+                    temperature *= (self.cooling_rate ** 2)
+                elif best.value > 40:
+                    # Cool slower if finding good solutions
+                    temperature *= (self.cooling_rate ** 0.5)
                 else:
                     temperature *= self.cooling_rate
-        
+            
         self.final_state = best.cube
         self.duration = time.time() - start_time
         
@@ -110,10 +136,10 @@ def run_experiments(n_experiments=3):
         
         # Initialize with optimized parameters
         sa = SimulatedAnnealing(
-            initial_temp=100000.0,  # Higher initial temperature
-            cooling_rate=0.9999,    # Much slower cooling
-            min_temp=0.01,          # Lower minimum temperature
-            max_iterations=500000    # More iterations
+            initial_temp=1000000.0,
+            cooling_rate=0.99999,
+            min_temp=0.0001,
+            max_iterations=2000000
         )
         
         magic_cube = MagicCube()
