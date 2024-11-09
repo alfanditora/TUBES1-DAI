@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from MagicCube import MagicCube
 
-class SimulatedAnnealing:
+class ModifiedSimulatedAnnealing:
     def __init__(self, initial_temp=1000000.0, cooling_rate=0.99995, min_temp=0.0001, max_iterations=500000):
         self.initial_temp = initial_temp
         self.cooling_rate = cooling_rate
@@ -17,33 +17,64 @@ class SimulatedAnnealing:
         self.temperatures = []
         self.exp_deltaE_T = []
         self.stuck_count = 0
-        self.stuck_threshold = 175000  # Increased threshold
+        self.stuck_threshold = 175000
         self.duration = 0
+        
+        # Additional tracking
+        self.best_values = []
+        self.improvement_rates = []
+        self.phase_changes = []
         
         # States
         self.initial_state = None
         self.final_state = None
     
-    def accept_probability(self, current_value, neighbor_value, temperature):
+    def get_neighbors(self, current, num_neighbors=10):
+        neighbors = []
+        for _ in range(num_neighbors):
+            if random.random() < 0.7:  # 70% chance of regular swap
+                neighbor = current.get_successor("random")
+            else:  # 30% chance of multiple swaps
+                neighbor = current
+                for _ in range(3):
+                    neighbor = neighbor.get_successor("random")
+            neighbors.append(neighbor)
+        return neighbors
+    
+    def accept_probability(self, current_value, neighbor_value, temperature, progress):
         if neighbor_value >= current_value:
             return 1.0
         
         delta_E = neighbor_value - current_value
-        # Modified for better exploration vs exploitation balance
-        if temperature > self.initial_temp * 0.8:
-            prob = math.exp(delta_E / (temperature * 0.01))  # More accepting at high temperatures
-        elif temperature > self.initial_temp * 0.4:
-            prob = math.exp(delta_E / (temperature * 0.05))  # Moderate acceptance
-        else:
-            prob = math.exp(delta_E / temperature)  # More selective at low temperatures
+        
+        # Adaptive acceptance based on search progress
+        if progress < 0.3:  # Early stage - more exploratory
+            prob = math.exp(delta_E / (temperature * 0.08))
+        elif progress < 0.7:  # Mid stage - balanced
+            if current_value < 30:
+                prob = math.exp(delta_E / (temperature * 0.05))
+            else:
+                prob = math.exp(delta_E / temperature)
+        else:  # Late stage - more selective
+            prob = math.exp(delta_E / (temperature * 1.2))
         
         self.exp_deltaE_T.append(prob)
         return prob
     
+    def adaptive_reheat(self, best_value, temperature):
+        if best_value < 25:
+            return self.initial_temp * 0.95  # Strong reheat
+        elif best_value < 35:
+            return self.initial_temp * 0.8   # Moderate reheat
+        elif best_value < 45:
+            return temperature * 2           # Light reheat
+        else:
+            return temperature * 1.5         # Very light reheat
+    
     def run(self, magic_cube):
         start_time = time.time()
         
-        # Save initial state
+        # Initialize
         current = MagicCube(magic_cube.cube)
         self.initial_state = current.cube
         best = MagicCube(current.cube)
@@ -51,237 +82,91 @@ class SimulatedAnnealing:
         temperature = self.initial_temp
         iterations_without_improvement = 0
         total_iterations = 0
-        plateau_count = 0
+        phase = "exploration"
+        last_improvement = 0
         
         while temperature > self.min_temp and total_iterations < self.max_iterations:
-            # Multiple attempts at each temperature level
-            for _ in range(300):  # Increased for better exploration
-                if total_iterations >= self.max_iterations:
-                    break
-                    
-                # Get multiple neighbors and select the best one
-                best_neighbor = None
-                best_neighbor_value = float('-inf')
+            progress = total_iterations / self.max_iterations
+            
+            # Generate and evaluate multiple neighbors
+            neighbors = self.get_neighbors(current)
+            best_neighbor = max(neighbors, key=lambda x: x.value)
+            
+            # Calculate acceptance probability
+            if self.accept_probability(current.value, best_neighbor.value, 
+                                    temperature, progress) > random.random():
+                current = best_neighbor
                 
-                # Try multiple neighbors
-                for _ in range(10):  # Increased neighbor attempts
-                    neighbor = current.get_successor("random")
-                    if neighbor.value > best_neighbor_value:
-                        best_neighbor = neighbor
-                        best_neighbor_value = neighbor.value
-                
-                # Calculate acceptance probability
-                if self.accept_probability(current.value, best_neighbor.value, temperature) > random.random():
-                    current = best_neighbor
+                # Update best if improved
+                if current.value > best.value:
+                    best = MagicCube(current.cube)
+                    iterations_without_improvement = 0
+                    last_improvement = total_iterations
                     
-                    # Update best if improved
-                    if current.value > best.value:
-                        best = MagicCube(current.cube)
-                        iterations_without_improvement = 0
-                        plateau_count = 0
-                    elif current.value == best.value:
-                        plateau_count += 1
-                    else:
-                        iterations_without_improvement += 1
+                    # Track improvement rate
+                    self.improvement_rates.append(
+                        (total_iterations, current.value - best.value)
+                    )
                 else:
                     iterations_without_improvement += 1
-                
-                # Track progress
-                self.objective_values.append(current.value)
-                self.temperatures.append(temperature)
-                
-                total_iterations += 1
+            else:
+                iterations_without_improvement += 1
+            
+            # Phase detection and adaptation
+            if phase == "exploration" and temperature < self.initial_temp * 0.5:
+                phase = "intensification"
+                self.phase_changes.append(("intensification", total_iterations))
+            elif phase == "intensification" and temperature < self.initial_temp * 0.1:
+                phase = "convergence"
+                self.phase_changes.append(("convergence", total_iterations))
             
             # Check if stuck
             if iterations_without_improvement >= self.stuck_threshold:
                 self.stuck_count += 1
-                # Enhanced reheat strategy based on current performance
-                if best.value < 40:
-                    temperature = self.initial_temp * 0.95  # Very aggressive reheat
-                elif best.value < 60:
-                    temperature = self.initial_temp * 0.8   # Strong reheat
-                elif best.value < 80:
-                    temperature = self.initial_temp * 0.6   # Moderate reheat
-                else:
-                    temperature = self.initial_temp * 0.4   # Light reheat
-                
+                temperature = self.adaptive_reheat(best.value, temperature)
                 iterations_without_improvement = 0
-                plateau_count = 0
                 
-                # Return to best state with adaptive random modifications
+                # Return to best state with some randomization
                 current = MagicCube(best.cube)
-                modifications = max(2, min(8, int(80 - best.value)))  # More adaptive
-                for _ in range(modifications):
+                for _ in range(random.randint(2, 5)):
                     current = current.get_successor("random")
             else:
-                # Enhanced adaptive cooling strategy
-                if plateau_count > 10000:  # Adjusted plateau threshold
-                    temperature *= (self.cooling_rate ** 2)      # Fast cooling in plateaus
-                elif best.value > 80:
-                    temperature *= (self.cooling_rate ** 0.1)    # Very slow cooling for excellent solutions
-                elif best.value > 60:
-                    temperature *= (self.cooling_rate ** 0.25)   # Slow cooling for good solutions
-                elif best.value > 40:
-                    temperature *= (self.cooling_rate ** 0.5)    # Moderate cooling for decent solutions
-                else:
-                    temperature *= self.cooling_rate             # Normal cooling
+                # Adaptive cooling based on phase and performance
+                if phase == "exploration":
+                    temperature *= self.cooling_rate
+                elif phase == "intensification":
+                    if best.value > 40:
+                        temperature *= (self.cooling_rate ** 0.7)
+                    else:
+                        temperature *= self.cooling_rate
+                else:  # convergence
+                    temperature *= (self.cooling_rate ** 1.2)
+            
+            # Track progress
+            self.objective_values.append(current.value)
+            self.temperatures.append(temperature)
+            self.best_values.append(best.value)
+            
+            total_iterations += 1
         
         self.final_state = best.cube
         self.duration = time.time() - start_time
         
         return best
 
-def run_experiments(n_experiments=3):
-    all_results = []
-    
-    for exp in range(n_experiments):
-        print(f"\nRunning experiment {exp+1}/{n_experiments}")
+    def visualize_search_phases(self):
+        plt.figure(figsize=(15, 5))
+        plt.plot(self.objective_values, 'b-', alpha=0.3, label='Current Value')
+        plt.plot(self.best_values, 'r-', label='Best Value')
         
-        sa = SimulatedAnnealing(
-            initial_temp=1000000.0,
-            cooling_rate=0.99995,
-            min_temp=0.0001,
-            max_iterations=500000
-        )
-        
-        magic_cube = MagicCube()
-        initial_value = magic_cube.value
-        
-        # Run algorithm
-        best_solution = sa.run(magic_cube)
-        
-        # Store results
-        result = {
-            'experiment': exp + 1,
-            'initial_state': sa.initial_state,
-            'final_state': sa.final_state,
-            'initial_value': initial_value,
-            'final_value': best_solution.value,
-            'objective_values': sa.objective_values,
-            'temperatures': sa.temperatures,
-            'exp_deltaE_T': sa.exp_deltaE_T,
-            'stuck_count': sa.stuck_count,
-            'duration': sa.duration
-        }
-        all_results.append(result)
-        
-        # Visualize individual experiment
-        visualize_experiment(result)
-    
-    # Visualize summary
-    visualize_summary(all_results)
-    return all_results
-
-def visualize_experiment(result):
-    plt.figure(figsize=(15, 10))
-    
-    # Plot objective function
-    plt.subplot(2, 2, 1)
-    plt.plot(result['objective_values'], 'b-', alpha=0.6)
-    plt.title('Objective Function Value vs Iterations')
-    plt.xlabel('Iteration')
-    plt.ylabel('Value')
-    plt.grid(True)
-    
-    # Add moving average
-    window = 1000
-    if len(result['objective_values']) > window:
-        moving_avg = np.convolve(result['objective_values'], 
-                               np.ones(window)/window, 
-                               mode='valid')
-        plt.plot(range(window-1, len(result['objective_values'])), 
-                moving_avg, 'r-', linewidth=2, 
-                label=f'Moving Average (window={window})')
+        # Mark phase changes
+        for phase, iteration in self.phase_changes:
+            plt.axvline(x=iteration, color='g', linestyle='--', alpha=0.5)
+            plt.text(iteration, plt.ylim()[1], phase, rotation=90)
+            
+        plt.title('Search Progress with Phase Changes')
+        plt.xlabel('Iteration')
+        plt.ylabel('Value')
         plt.legend()
-    
-    # Plot temperature
-    plt.subplot(2, 2, 2)
-    plt.plot(result['temperatures'])
-    plt.title('Temperature vs Iterations')
-    plt.xlabel('Iteration')
-    plt.ylabel('Temperature')
-    plt.grid(True)
-    plt.yscale('log')
-    
-    # Plot e^(ΔE/T)
-    plt.subplot(2, 2, 3)
-    plt.plot(result['exp_deltaE_T'])
-    plt.title('e^(ΔE/T) vs Iterations')
-    plt.xlabel('Iteration')
-    plt.ylabel('e^(ΔE/T)')
-    plt.grid(True)
-    
-    # Display experiment info
-    plt.subplot(2, 2, 4)
-    plt.axis('off')
-    info_text = (
-        f"Experiment {result['experiment']}\n\n"
-        f"Initial Value: {result['initial_value']}\n"
-        f"Final Value: {result['final_value']}\n"
-        f"Improvement: {result['final_value'] - result['initial_value']}\n"
-        f"Times Stuck: {result['stuck_count']}\n"
-        f"Duration: {result['duration']:.2f} seconds"
-    )
-    plt.text(0.1, 0.5, info_text, fontsize=12)
-    
-    plt.tight_layout()
-    plt.show()
-    
-    # Print cube states
-    print("\nInitial State:")
-    MagicCube(result['initial_state']).print_cube()
-    print("\nFinal State:")
-    MagicCube(result['final_state']).print_cube()
-
-def visualize_summary(results):
-    plt.figure(figsize=(15, 10))
-    
-    # Plot final values
-    plt.subplot(2, 2, 1)
-    final_values = [r['final_value'] for r in results]
-    plt.bar(range(1, len(results) + 1), final_values, color='skyblue')
-    plt.title('Final Values Across Experiments')
-    plt.xlabel('Experiment')
-    plt.ylabel('Value')
-    plt.grid(True)
-    
-    # Add value labels
-    for i, v in enumerate(final_values):
-        plt.text(i + 1, v, str(v), ha='center', va='bottom')
-    
-    # Plot durations
-    plt.subplot(2, 2, 2)
-    durations = [r['duration'] for r in results]
-    plt.bar(range(1, len(results) + 1), durations, color='lightgreen')
-    plt.title('Duration of Experiments')
-    plt.xlabel('Experiment')
-    plt.ylabel('Seconds')
-    plt.grid(True)
-    
-    # Plot stuck counts
-    plt.subplot(2, 2, 3)
-    stuck_counts = [r['stuck_count'] for r in results]
-    plt.bar(range(1, len(results) + 1), stuck_counts, color='salmon')
-    plt.title('Times Stuck in Local Optima')
-    plt.xlabel('Experiment')
-    plt.ylabel('Count')
-    plt.grid(True)
-    
-    # Display summary statistics
-    plt.subplot(2, 2, 4)
-    plt.axis('off')
-    summary_text = (
-        f"Summary Statistics\n\n"
-        f"Average Final Value: {np.mean(final_values):.2f}\n"
-        f"Best Value Found: {max(final_values)}\n"
-        f"Average Duration: {np.mean(durations):.2f}s\n"
-        f"Average Times Stuck: {np.mean(stuck_counts):.2f}\n"
-        f"Total Experiments: {len(results)}"
-    )
-    plt.text(0.1, 0.5, summary_text, fontsize=12)
-    
-    plt.tight_layout()
-    plt.show()
-
-if __name__ == "__main__":
-    results = run_experiments(3)
+        plt.grid(True)
+        plt.show()
