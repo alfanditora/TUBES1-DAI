@@ -141,7 +141,7 @@ def run_experiments(n_experiments=3):
             initial_temp=1000000.0,
             cooling_rate=0.99995,
             min_temp=0.0001,
-            max_iterations=500000
+            max_iterations=1000
         )
         
         magic_cube = MagicCube()
