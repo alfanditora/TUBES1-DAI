@@ -92,9 +92,6 @@ class MagicCube(object):
         new_cube[i1][j1][k1], new_cube[i2][j2][k2] = new_cube[i2][j2][k2], new_cube[i1][j1][k1]
         return new_cube
 
-    def get_position_value(self, i, j, k):
-        return self.cube[i][j][k]
-
     def get_successor(self, mode="random"):
         if mode == "random":
             # Get two random positions
@@ -151,3 +148,10 @@ class MagicCube(object):
             print("Congratulations! Magic cube solved!")
         else:
             print("Magic cube not yet solved.")
+
+    
+if __name__ == "__main__":
+    M = MagicCube()
+    M.print_cube()
+    M = M.get_successor("best")
+    M.print_cube()

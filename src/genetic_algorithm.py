@@ -3,11 +3,10 @@ import time
 import matplotlib.pyplot as plt
 from typing import List, Tuple
 from itertools import combinations
-from newMC1 import MagicCube
+from MagicCube import MagicCube
 
 class GeneticAlgorithmCube:
     def __init__(self, population_size=1000, base_mutation_probability=0.07, iterations=1000):
-        self.name = 'Genetic Algorithm for Magic Cube'
         self.iterations = iterations
         self.population_size = population_size
         self.base_mutation_probability = base_mutation_probability
@@ -17,96 +16,30 @@ class GeneticAlgorithmCube:
         self.mutation_increase_rate = 0.05
         self.avg_fitness_history = []
         self.best_fitness_history = []
+        self.start_time = None
+        self.execution_time = None
+        self.initial_state = None
+        self.final_state = None
+        self.initial_fitness = None
+        self.final_fitness = None
 
-    def run(self, init_state):
-        start_time = time.time()
-        
-        population: List[MagicCube] = []
-        population.append(init_state)
-        
-        for _ in range(self.population_size - 1):
-            new_cube = MagicCube()
-            population.append(new_cube)
 
-        best_individual = population[0]
-        best_fitness = best_individual.value
-        stagnation_counter = 0
-        last_best_fitness = best_fitness
-        
-        for i in range(self.iterations):
-            current_fitness = [cube.value for cube in population]
-            avg_fitness = np.mean(current_fitness)
-            max_fitness = max(current_fitness)
-            
-            self.avg_fitness_history.append(avg_fitness)
-            self.best_fitness_history.append(max_fitness)
 
-            current_best = max(population, key=lambda x: x.value)
-            current_best_fitness = current_best.value
-            
-            if current_best_fitness <= last_best_fitness:
-                stagnation_counter += 1
-            else:
-                stagnation_counter = 0
-                last_best_fitness = current_best_fitness
-
-            if stagnation_counter >= self.stagnation_threshold:
-                self._increase_mutation_rate()
-                stagnation_counter = 0
-            
-            if current_best_fitness > best_fitness:
-                best_individual = current_best
-                best_fitness = current_best_fitness
-                self._reset_mutation_rate()
-
-            if (i + 1) % 50 == 0:
-                print(f"Iterasi {i+1}: Nilai Terbaik: {best_fitness}/109, Rata-rata: {avg_fitness:.2f}")
-                print("\nKubus terbaik saat ini:")
-                best_individual.print_cube()
-
-            if best_fitness == 109:
-                end_time = time.time()
-                print(f"\nSolusi ditemukan pada iterasi {i+1}")
-                print(f"Durasi proses: {end_time - start_time:.2f} detik")
-                self.plot_progress()
-                return best_individual, best_fitness, i + 1
-
-            fitness = self._calculate_fitness(population)
-            population = self._selection(population, fitness)
-            population = self._crossover(population)
-            population = self._mutation(population)
-
-        end_time = time.time()
-        print(f"Durasi proses: {end_time - start_time:.2f} detik")
-        self.plot_progress()
-        return best_individual, best_fitness, self.iterations
-
-    def _increase_mutation_rate(self):
+    def increase_mutation_rate(self):
         self.current_mutation_rate = min(
             self.max_mutation_rate,
             self.current_mutation_rate + self.mutation_increase_rate
         )
 
-    def _reset_mutation_rate(self):
+    def reset_mutation_rate(self):
         self.current_mutation_rate = self.base_mutation_probability
 
-    def plot_progress(self):
-        plt.figure(figsize=(12, 6))
-        plt.plot(self.best_fitness_history, label='Nilai Terbaik')
-        plt.plot(self.avg_fitness_history, label='Rata-rata Populasi')
-        plt.xlabel('Iterasi')
-        plt.ylabel('Nilai Fitness')
-        plt.title('Progress Optimasi Magic Cube')
-        plt.legend()
-        plt.grid(True)
-        plt.show()
-
-    def _calculate_fitness(self, population: List[MagicCube]) -> np.ndarray:
+    def calculate_fitness(self, population: List[MagicCube]) -> np.ndarray:
         scores = np.array([cube.value for cube in population])
         scaled_scores = np.exp(scores - np.min(scores))
         return scaled_scores / np.sum(scaled_scores)
 
-    def _selection(self, population: List[MagicCube], fitness: np.ndarray) -> List[MagicCube]:
+    def selection(self, population: List[MagicCube], fitness: np.ndarray) -> List[MagicCube]:
         elite_size = max(2, self.population_size // 5)
         sorted_indices = np.argsort(fitness)[::-1]
         selected = [population[i] for i in sorted_indices[:elite_size]]
@@ -120,7 +53,7 @@ class GeneticAlgorithmCube:
             
         return selected
 
-    def _crossover(self, parents: List[MagicCube]) -> List[MagicCube]:
+    def crossover(self, parents: List[MagicCube]) -> List[MagicCube]:
         children = []
         elite_size = max(2, self.population_size // 10)
         elite_parents = parents[:elite_size]
@@ -212,7 +145,7 @@ class GeneticAlgorithmCube:
         children.sort(key=lambda x: x.calculate_value(), reverse=True)
         return children[:self.population_size]    
     
-    def _mutation(self, population: List[MagicCube]) -> List[MagicCube]:
+    def mutation(self, population: List[MagicCube]) -> List[MagicCube]:
         mutated = []
         for individual in population:
             if np.random.random() < self.current_mutation_rate:
@@ -233,9 +166,103 @@ class GeneticAlgorithmCube:
                 mutated.append(individual)
         return mutated
     
+    def plot_progress(self):
+        fig = plt.figure(figsize=(15, 10))
+        ax1 = plt.subplot(2, 1, 1)
+        ax1.plot(self.best_fitness_history, label='Nilai Terbaik', color='blue')
+        ax1.plot(self.avg_fitness_history, label='Rata-rata Populasi', color='green')
+        ax1.set_xlabel('Iterasi')
+        ax1.set_ylabel('Nilai Fitness')
+        ax1.set_title('Progress Optimasi Magic Cube')
+        ax1.legend()
+        ax1.grid(True)
+
+
+        info_text = (
+            f'Informasi Optimasi:\n'
+            f'Populasi: {self.population_size}\n'
+            f'Total Iterasi: {len(self.best_fitness_history)}\n'
+            f'Durasi: {self.execution_time:.2f} detik\n'
+            f'Nilai Awal: {self.initial_fitness}/109\n'
+            f'Nilai Akhir: {self.final_fitness}/109'
+        )
+        
+        plt.figtext(0.15, 0.15, info_text, bbox=dict(facecolor='white', alpha=0.8, edgecolor='gray'),fontsize=10, family='monospace')
+
+
+        ax2 = plt.subplot(2, 1, 2)
+        ax2.axis('off')
+
+        plt.tight_layout()
+        plt.show()
+    
+    def run(self, init_state):
+        self.start_time = time.time()
+        self.initial_state = init_state
+        self.initial_fitness = init_state.value
+        
+        population: List[MagicCube] = []
+        population.append(init_state)
+        
+        for _ in range(self.population_size - 1):
+            new_cube = MagicCube()
+            population.append(new_cube)
+
+        best_individual = population[0]
+        best_fitness = best_individual.value
+        stagnation_counter = 0
+        last_best_fitness = best_fitness
+        
+        for i in range(self.iterations):
+            current_fitness = [cube.value for cube in population]
+            avg_fitness = np.mean(current_fitness)
+            max_fitness = max(current_fitness)
+            
+            self.avg_fitness_history.append(avg_fitness)
+            self.best_fitness_history.append(max_fitness)
+
+            current_best = max(population, key=lambda x: x.value)
+            current_best_fitness = current_best.value
+            
+            if current_best_fitness <= last_best_fitness:
+                stagnation_counter += 1
+            else:
+                stagnation_counter = 0
+                last_best_fitness = current_best_fitness
+
+            if stagnation_counter >= self.stagnation_threshold:
+                self.increase_mutation_rate()
+                stagnation_counter = 0
+            
+            if current_best_fitness > best_fitness:
+                best_individual = current_best
+                best_fitness = current_best_fitness
+                self.reset_mutation_rate()
+
+            if best_fitness == 109:
+                self.execution_time = time.time() - self.start_time
+                self.final_state = best_individual
+                self.final_fitness = best_fitness
+                print(f"\nSolusi ditemukan pada iterasi {i+1}")
+                print(f"Durasi proses: {self.execution_time:.2f} detik")
+                self.plot_progress()
+                return best_individual, best_fitness, i + 1
+
+            fitness = self.calculate_fitness(population)
+            population = self.selection(population, fitness)
+            population = self.crossover(population)
+            population = self.mutation(population)
+
+        self.execution_time = time.time() - self.start_time
+        self.final_state = best_individual
+        self.final_fitness = best_fitness
+        print(f"Durasi proses: {self.execution_time:.2f} detik")
+        self.plot_progress()
+        return best_individual, best_fitness, self.iterations
+    
 def main():
-    population_size = 300
-    max_iterations = 1000
+    population_size = 150
+    max_iterations = 100
     
     ga = GeneticAlgorithmCube(
         population_size=population_size,
