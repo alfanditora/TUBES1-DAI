@@ -6,183 +6,155 @@ import numpy as np
 from MagicCube import MagicCube
 
 class SimulatedAnnealing:
-    def __init__(self, initial_temp=1000000.0, cooling_rate=0.99995, min_temp=0.0001, max_iterations=500000):
-        self.initial_temp = initial_temp
-        self.cooling_rate = cooling_rate
-        self.min_temp = min_temp
-        self.max_iterations = max_iterations
+    def __init__(self):
+        # Parameter standar
+        self.initial_temp = 1000000.0
+        self.cooling_rate = 0.99995
+        self.min_temp = 0.0001
+        self.max_iter = 500000
         
-        # Tracking metrics
-        self.objective_values = []
-        self.temperatures = []
-        self.exp_deltaE_T = []
-        self.stuck_count = 0
-        self.stuck_threshold = 175000
+        # Tracking
+        self.values = []  # objective function values
+        self.temps = []   # temperature history
+        self.probs = []   # acceptance probabilities
+        self.stuck = 0    # stuck counter
         self.duration = 0
+        self.thresh = 175000  # stuck threshold
         
         # States
-        self.initial_state = None
-        self.final_state = None
-    
-    def accept_probability(self, current_value, neighbor_value, temperature):
-        if neighbor_value >= current_value:
+        self.start_state = None
+        self.end_state = None
+
+    def get_probability(self, old_val, new_val, temp):
+        if new_val >= old_val:
             return 1.0
-        
-        delta_E = neighbor_value - current_value
-        prob = math.exp(delta_E / temperature)
-        self.exp_deltaE_T.append(prob)
+        delta = new_val - old_val
+        prob = math.exp(delta / temp)
+        self.probs.append(prob)
         return prob
-    
-    def run(self, magic_cube):
-        start_time = time.time()
+
+    def optimize(self, magic_cube):
+        start = time.time()
         
-        # Save initial state
+        # Setup
         current = MagicCube(magic_cube.cube)
-        self.initial_state = current.cube
+        self.start_state = current.cube
         best = MagicCube(current.cube)
         
-        temperature = self.initial_temp
-        iterations_without_improvement = 0
-        total_iterations = 0
+        temp = self.initial_temp
+        no_improve = 0
+        iters = 0
         
-        while temperature > self.min_temp and total_iterations < self.max_iterations:
-            # Get neighbor
+        # Main loop
+        while temp > self.min_temp and iters < self.max_iter:
             neighbor = current.get_successor("random")
             
-            # Accept or reject
-            if self.accept_probability(current.value, neighbor.value, temperature) > random.random():
+            # Accept/reject neighbor
+            if self.get_probability(current.value, neighbor.value, temp) > random.random():
                 current = neighbor
-                
-                # Update best if improved
                 if current.value > best.value:
                     best = MagicCube(current.cube)
-                    iterations_without_improvement = 0
+                    no_improve = 0
                 else:
-                    iterations_without_improvement += 1
+                    no_improve += 1
             else:
-                iterations_without_improvement += 1
+                no_improve += 1
             
-            # Check if stuck
-            if iterations_without_improvement >= self.stuck_threshold:
-                self.stuck_count += 1
-                temperature = self.initial_temp * 0.8
-                iterations_without_improvement = 0
+            # Handle stuck case
+            if no_improve >= self.thresh:
+                self.stuck += 1
+                temp = self.initial_temp * 0.8
+                no_improve = 0
                 current = MagicCube(best.cube)
             
             # Track progress
-            self.objective_values.append(current.value)
-            self.temperatures.append(temperature)
+            self.values.append(current.value)
+            self.temps.append(temp)
             
-            # Cool down
-            temperature *= self.cooling_rate
-            total_iterations += 1
+            # Cool system
+            temp *= self.cooling_rate
+            iters += 1
         
-        self.final_state = best.cube
-        self.duration = time.time() - start_time
-        
+        self.end_state = best.cube
+        self.duration = time.time() - start
         return best
 
-def visualize_experiment(result):
-    plt.figure(figsize=(15, 10))
+def show_experiment(data):
+    plt.figure(figsize=(12, 8))
     
-    # Plot objective function
+    # Values plot
     plt.subplot(2, 2, 1)
-    plt.plot(result['objective_values'], 'b-', alpha=0.6)
-    plt.title('Objective Function Value vs Iterations')
-    plt.xlabel('Iteration')
-    plt.ylabel('Value')
+    plt.plot(data['values'])
+    plt.title('Values over Time')
     plt.grid(True)
     
-    # Add moving average
-    window = 1000
-    if len(result['objective_values']) > window:
-        moving_avg = np.convolve(result['objective_values'], 
-                               np.ones(window)/window, 
-                               mode='valid')
-        plt.plot(range(window-1, len(result['objective_values'])), 
-                moving_avg, 'r-', linewidth=2, 
-                label=f'Moving Average (window={window})')
-        plt.legend()
-    
-    # Plot temperature
+    # Temperature plot
     plt.subplot(2, 2, 2)
-    plt.plot(result['temperatures'])
-    plt.title('Temperature vs Iterations')
-    plt.xlabel('Iteration')
-    plt.ylabel('Temperature')
-    plt.grid(True)
+    plt.plot(data['temps'])
+    plt.title('Temperature Change')
     plt.yscale('log')
-    
-    # Plot e^(ΔE/T)
-    plt.subplot(2, 2, 3)
-    plt.plot(result['exp_deltaE_T'])
-    plt.title('e^(ΔE/T) vs Iterations')
-    plt.xlabel('Iteration')
-    plt.ylabel('e^(ΔE/T)')
     plt.grid(True)
     
-    # Display experiment info
+    # Probabilities plot
+    plt.subplot(2, 2, 3)
+    plt.plot(data['probs'])
+    plt.title('Acceptance Probabilities')
+    plt.grid(True)
+    
+    # Info box
     plt.subplot(2, 2, 4)
     plt.axis('off')
-    info_text = (
-        f"Initial Value: {result['initial_value']}\n"
-        f"Final Value: {result['final_value']}\n"
-        f"Improvement: {result['final_value'] - result['initial_value']}\n"
-        f"Times Stuck: {result['stuck_count']}\n"
-        f"Duration: {result['duration']:.2f} seconds"
+    info = (
+        f"Start Value: {data['start_val']}\n"
+        f"End Value: {data['end_val']}\n"
+        f"Change: {data['end_val'] - data['start_val']}\n"
+        f"Stuck Times: {data['stuck']}\n"
+        f"Time: {data['time']:.2f}s"
     )
-    plt.text(0.1, 0.5, info_text, fontsize=12)
+    plt.text(0.1, 0.5, info, fontsize=10)
     
     plt.tight_layout()
     plt.show()
-    
-    # Print cube states
-    print("\nInitial State:")
-    MagicCube(result['initial_state']).print_cube()
-    print("\nFinal State:")
-    MagicCube(result['final_state']).print_cube()
 
-def run_experiments(n_experiments=3):
-    all_results = []
+def run_tests(count=3):
+    results = []
     
-    for exp in range(n_experiments):
-        print(f"\nRunning experiment {exp+1}/{n_experiments}")
+    for i in range(count):
+        print(f"\nTest {i+1}/{count}")
         
-        # Initialize
-        magic_cube = MagicCube()
+        cube = MagicCube()
         sa = SimulatedAnnealing()
+        best = sa.optimize(cube)
         
-        # Run algorithm
-        best_solution = sa.run(magic_cube)
-        
-        # Store results
-        result = {
-            'initial_state': sa.initial_state,
-            'final_state': sa.final_state,
-            'initial_value': magic_cube.value,
-            'final_value': best_solution.value,
-            'objective_values': sa.objective_values,
-            'temperatures': sa.temperatures,
-            'exp_deltaE_T': sa.exp_deltaE_T,
-            'stuck_count': sa.stuck_count,
-            'duration': sa.duration
+        # Collect data
+        data = {
+            'start_val': cube.value,
+            'end_val': best.value,
+            'values': sa.values,
+            'temps': sa.temps,
+            'probs': sa.probs,
+            'stuck': sa.stuck,
+            'time': sa.duration
         }
-        all_results.append(result)
+        results.append(data)
         
-        # Visualize individual experiment
-        visualize_experiment(result)
+        # Show results
+        show_experiment(data)
+        
+        # Show cube states
+        print("\nStarting State:")
+        MagicCube(sa.start_state).print_cube()
+        print("\nFinal State:")
+        MagicCube(sa.end_state).print_cube()
     
-    # Visualize summary
-    print("\nExperiments Summary:")
-    final_values = [r['final_value'] for r in all_results]
-    durations = [r['duration'] for r in all_results]
-    stuck_counts = [r['stuck_count'] for r in all_results]
-    
-    print(f"Average Final Value: {np.mean(final_values):.2f}")
-    print(f"Best Value Found: {max(final_values)}")
-    print(f"Average Duration: {np.mean(durations):.2f}s")
-    print(f"Average Times Stuck: {np.mean(stuck_counts):.2f}")
+    # Show summary
+    print("\nOverall Results:")
+    end_vals = [r['end_val'] for r in results]
+    times = [r['time'] for r in results]
+    print(f"Average Value: {np.mean(end_vals):.2f}")
+    print(f"Best Value: {max(end_vals)}")
+    print(f"Average Time: {np.mean(times):.2f}s")
 
 if __name__ == "__main__":
-    print("Starting Simulated Annealing experiments...")
-    run_experiments(3)
+    print("Running Simulated Annealing Tests...")
+    run_tests(3)
