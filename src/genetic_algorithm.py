@@ -23,72 +23,7 @@ class GeneticAlgorithmCube:
         self.initial_fitness = None
         self.final_fitness = None
 
-    def run(self, init_state):
-        self.start_time = time.time()
-        self.initial_state = init_state
-        self.initial_fitness = init_state.value
-        
-        population: List[MagicCube] = []
-        population.append(init_state)
-        
-        for _ in range(self.population_size - 1):
-            new_cube = MagicCube()
-            population.append(new_cube)
-
-        best_individual = population[0]
-        best_fitness = best_individual.value
-        stagnation_counter = 0
-        last_best_fitness = best_fitness
-        
-        for i in range(self.iterations):
-            current_fitness = [cube.value for cube in population]
-            avg_fitness = np.mean(current_fitness)
-            max_fitness = max(current_fitness)
-            
-            self.avg_fitness_history.append(avg_fitness)
-            self.best_fitness_history.append(max_fitness)
-
-            current_best = max(population, key=lambda x: x.value)
-            current_best_fitness = current_best.value
-            
-            if current_best_fitness <= last_best_fitness:
-                stagnation_counter += 1
-            else:
-                stagnation_counter = 0
-                last_best_fitness = current_best_fitness
-
-            if stagnation_counter >= self.stagnation_threshold:
-                self._increase_mutation_rate()
-                stagnation_counter = 0
-            
-            if current_best_fitness > best_fitness:
-                best_individual = current_best
-                best_fitness = current_best_fitness
-                self._reset_mutation_rate()
-
-            if best_fitness == 109:
-                self.execution_time = time.time() - self.start_time
-                self.final_state = best_individual
-                self.final_fitness = best_fitness
-                print(f"\nSolusi ditemukan pada iterasi {i+1}")
-                print(f"Durasi proses: {self.execution_time:.2f} detik")
-                self.plot_progress()
-                return best_individual, best_fitness, i + 1
-
-            fitness = self._calculate_fitness(population)
-            population = self._selection(population, fitness)
-            population = self._crossover(population)
-            population = self._mutation(population)
-
-        self.execution_time = time.time() - self.start_time
-        self.final_state = best_individual
-        self.final_fitness = best_fitness
-        print(f"Durasi proses: {self.execution_time:.2f} detik")
-        self.plot_progress()
-        return best_individual, best_fitness, self.iterations
-
-
-    def _increase_mutation_rate(self):
+    def increase_mutation_rate(self):
         self.current_mutation_rate = min(
             self.max_mutation_rate,
             self.current_mutation_rate + self.mutation_increase_rate
@@ -133,7 +68,7 @@ class GeneticAlgorithmCube:
         plt.tight_layout()
         plt.show()
 
-    def _calculate_fitness(self, population: List[MagicCube]) -> np.ndarray:
+    def calculate_fitness(self, population: List[MagicCube]) -> np.ndarray:
         scores = np.array([cube.value for cube in population])
         scaled_scores = np.exp(scores - np.min(scores))
         return scaled_scores / np.sum(scaled_scores)
