@@ -32,42 +32,6 @@ class GeneticAlgorithmCube:
     def reset_mutation_rate(self):
         self.current_mutation_rate = self.base_mutation_probability
 
-    def plot_progress(self):
-
-        fig = plt.figure(figsize=(15, 10))
-        
-
-        ax1 = plt.subplot(2, 1, 1)
-        ax1.plot(self.best_fitness_history, label='Nilai Terbaik', color='blue')
-        ax1.plot(self.avg_fitness_history, label='Rata-rata Populasi', color='green')
-        ax1.set_xlabel('Iterasi')
-        ax1.set_ylabel('Nilai Fitness')
-        ax1.set_title('Progress Optimasi Magic Cube')
-        ax1.legend()
-        ax1.grid(True)
-
-
-        info_text = (
-            f'Informasi Optimasi:\n'
-            f'Populasi: {self.population_size}\n'
-            f'Total Iterasi: {len(self.best_fitness_history)}\n'
-            f'Durasi: {self.execution_time:.2f} detik\n'
-            f'Nilai Awal: {self.initial_fitness}/109\n'
-            f'Nilai Akhir: {self.final_fitness}/109'
-        )
-        
-        plt.figtext(0.15, 0.15, info_text, 
-                   bbox=dict(facecolor='white', alpha=0.8, edgecolor='gray'),
-                   fontsize=10, 
-                   family='monospace')
-
-
-        ax2 = plt.subplot(2, 1, 2)
-        ax2.axis('off')
-
-        plt.tight_layout()
-        plt.show()
-
     def calculate_fitness(self, population: List[MagicCube]) -> np.ndarray:
         scores = np.array([cube.value for cube in population])
         scaled_scores = np.exp(scores - np.min(scores))
