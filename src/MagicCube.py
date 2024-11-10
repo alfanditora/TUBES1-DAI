@@ -138,12 +138,11 @@ class MagicCube(object):
         for i in range(self.size):
             print(f"\nLayer {i+1}:")
             for row in self.cube[i]:
-                print([f"{x:3d}" for x in row])
+                formatted_row = [f"{x:3d}" for x in row]
+                print(f"[{', '.join(formatted_row)}]")
         print(f"\nCurrent Value: {self.value}")
         if self.value == 109:
             print("Congratulations! Magic cube solved!")
-        else:
-            print("Magic cube not yet solved.")
 
     
 if __name__ == "__main__":
