@@ -1,12 +1,14 @@
 from MagicCube import MagicCube
 import matplotlib.pyplot as plt
 import time
+import os
 
 class steepest_ascent(object):
     def __init__(self):
         self.list_of_value = []
         self.iteration = 0
         self.duration = 0
+        self.filepath = self.make_file()
 
     def run(self):
         start_time = time.time()
@@ -18,14 +20,12 @@ class steepest_ascent(object):
 
         while True:
             successor = current.get_successor("best")
-            if current.value == 109:
-                break
             if successor.value <= current.value:
                 break
             else:
                 current = successor
             self.list_of_value.append(current.value)
-                
+            self.save_state(current, self.filepath)
             i += 1
 
         current.print_cube()
@@ -58,6 +58,29 @@ class steepest_ascent(object):
         plt.tight_layout()
         plt.show()
 
+    def save_state(self, current_state, filepath):
+        with open(filepath, "a") as file:
+            for row in range(current_state.size):
+                for col in range(current_state.size):
+                    for depth in range(current_state.size):
+                        file.write(str(current_state.cube[row][col][depth]) + " ")
+                file.write("\n")
+            file.write(f";\n")
+
+    def make_file(self):
+        directory = ".\\save_file"
+        os.makedirs(directory, exist_ok=True)
+        
+        counter = 1
+        while True:
+            filename = f"steepestascent{counter}.txt"
+            filepath = os.path.join(directory, filename)
+            
+            if not os.path.exists(filepath):
+                break
+            counter += 1
+        
+        return filepath
 
 if __name__ == "__main__":
     H = steepest_ascent()

@@ -22,8 +22,6 @@ class sideways_move(object):
         while True and sideways_moves < self.max_sideways_moves:
             successor = current.get_successor("best")
     
-            if current.value == 109:
-                break
             if successor.value == current.value:
                 sideways_moves += 1
             elif successor.value < current.value:

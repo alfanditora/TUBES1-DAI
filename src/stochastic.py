@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import time
 
 class stochastic(object):
-    def __init__(self, max_iterations=10000):
+    def __init__(self, max_iterations=100000):
         self.max_iterations = max_iterations
         self.list_of_value = []
         self.iteration = 0
@@ -19,8 +19,6 @@ class stochastic(object):
 
         for i in range(self.max_iterations):
             successor = current.get_successor("random")
-            if (current.value == 109):
-                break
             if successor.value > current.value:
                 current = successor
                 
@@ -29,7 +27,7 @@ class stochastic(object):
 
         current.print_cube()
         self.duration = time.time() - start_time
-        self.iteration = i
+        self.iteration = i + 1
         print(self.duration)
         print(self.iteration)
         self.makePlot()
