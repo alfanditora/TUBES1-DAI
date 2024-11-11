@@ -5,6 +5,8 @@ Implementation of various Local Search Algorithms to solve Magic Cube problem fo
 ## Project Structure
 ```
 TUBES1-DAI/
+├── doc/
+│   └── Tubes1_K01_Kelompok39.pdf          # Laporan tugas besar
 ├── save_file/          # Directory for saving experiment states
 │   └── *.txt          # Saved states from different algorithms
 ├── src/
@@ -18,8 +20,6 @@ TUBES1-DAI/
 │   ├── stochastic.py           # Stochastic Hill Climbing
 │   └── visualizer.py           # Visualization implementation using Flet
 ├── .gitignore
-├── doc/
-│   └── Tubes1_K01_Kelompok39.pdf          # Laporan tugas besar
 └── README.md
 ```
 
