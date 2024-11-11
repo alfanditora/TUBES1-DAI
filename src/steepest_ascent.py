@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import time
 import os
 
-class steepest_ascent(object):
+class steepest_ascent:
     def __init__(self):
         self.list_of_value = []
         self.iteration = 0

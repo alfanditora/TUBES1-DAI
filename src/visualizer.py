@@ -4,7 +4,7 @@ import threading
 import os
 from MagicCube import MagicCube
 
-class Visualizer(object):
+class Visualizer:
     def __init__(self):
         self.list_of_magiccube = []
         self.current_index = 0

@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import time
 import os
 
-class sideways_move(object):
+class sideways_move:
     def __init__(self, max_sideways_moves = 100):
         self.list_of_value = []
         self.max_sideways_moves = max_sideways_moves

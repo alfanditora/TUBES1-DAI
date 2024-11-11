@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import time
 import os
 
-class stochastic(object):
+class stochastic:
     def __init__(self, max_iterations=100000):
         self.max_iterations = max_iterations
         self.list_of_value = []

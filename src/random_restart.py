@@ -4,7 +4,7 @@ import time
 from typing import List, Tuple
 import os
 
-class random_restart_hill_climbing(object):
+class random_restart_hill_climbing:
     def __init__(self, max_restarts: int = 10):
         self.list_of_value: List[int] = []
         self.max_restarts = max_restarts

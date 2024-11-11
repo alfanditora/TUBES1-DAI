@@ -3,6 +3,7 @@ import time
 import matplotlib.pyplot as plt
 from typing import List
 from MagicCube import MagicCube
+import os
 
 class SimpleGeneticAlgorithm:
     def __init__(self, population_size=100, iterations=100):
@@ -14,6 +15,7 @@ class SimpleGeneticAlgorithm:
         self.execution_time = None
         self.initial_fitness = None
         self.final_fitness = None
+        self.filepath = self.make_file("geneticalgorithm")
 
     def calculate_fitness(self, population: List[MagicCube]) -> List[float]:
         return [cube.value for cube in population]
@@ -136,6 +138,8 @@ class SimpleGeneticAlgorithm:
             population = self.crossover(population)
             population = self.mutation(population)
 
+            best_cube.save_state(self.filepath)
+
         self.execution_time = time.time() - start_time
         self.final_fitness = best_fitness
         
@@ -147,6 +151,21 @@ class SimpleGeneticAlgorithm:
         self.plot_progress()
         
         return best_cube, best_fitness
+    
+    def make_file(self, name):
+        directory = ".\\save_file"
+        os.makedirs(directory, exist_ok=True)
+        
+        counter = 1
+        while True:
+            filename = f"{name}{counter}.txt"
+            filepath = os.path.join(directory, filename)
+            
+            if not os.path.exists(filepath):
+                break
+            counter += 1
+        
+        return filepath
 
 def main():
     ga = SimpleGeneticAlgorithm(

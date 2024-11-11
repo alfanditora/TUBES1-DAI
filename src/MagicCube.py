@@ -1,6 +1,6 @@
 import random
 
-class MagicCube(object):
+class MagicCube:
     def __init__(self, cube=None):
         if cube is None:
             self.size = 5
