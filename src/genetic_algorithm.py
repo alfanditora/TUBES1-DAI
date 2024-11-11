@@ -1,26 +1,9 @@
 import numpy as np
 import time
 import matplotlib.pyplot as plt
-from typing import List, Tuple, Optional
+from typing import List
 from MagicCube import MagicCube
 import os
-import logging
-from dataclasses import dataclass
-import random
-from concurrent.futures import ThreadPoolExecutor
-
-logger = logging.getLogger(__name__)
-
-@dataclass
-class GeneticConfig:
-    population_size: int = 100
-    iterations: int = 100
-    mutation_rate: float = 0.1
-    tournament_size: int = 3
-    elite_size: int = 4
-    crossover_points: int = 2
-    parallel_processing: bool = True
-    max_workers: int = 4
 
 class GeneticAlgorithm:
     def __init__(self, population_size=100, iterations=100):
@@ -33,16 +16,9 @@ class GeneticAlgorithm:
         self.initial_fitness = None
         self.final_fitness = None
         self.filepath = self.make_file("geneticalgorithm")
-        self.population_cache = {}
 
     def calculate_fitness(self, population: List[MagicCube]) -> List[float]:
-        with ThreadPoolExecutor(max_workers=4) as executor:
-            return list(executor.map(lambda cube: cube.value, population))
-
-    def tournament_select(self, population: List[MagicCube], fitness: List[float], tournament_size: int = 3) -> MagicCube:
-        tournament_idx = np.random.choice(len(population), tournament_size, replace=False)
-        tournament = [(fitness[i], population[i]) for i in tournament_idx]
-        return max(tournament, key=lambda x: x[0])[1]
+        return [cube.value for cube in population]
 
     def selection(self, population: List[MagicCube], fitness: List[float]) -> List[MagicCube]:
         population_with_fitness = list(zip(fitness, population))
@@ -50,12 +26,13 @@ class GeneticAlgorithm:
         sorted_population = [cube for _, cube in population_with_fitness]
         elite_size = max(2, self.population_size // 4)
         elite = sorted_population[:elite_size]
+        new_population = []
+        new_population.extend(elite)
         
-        new_population = elite.copy()
         while len(new_population) < self.population_size:
-            parent = self.tournament_select(population, fitness)
-            new_population.append(MagicCube(parent.copy_cube(parent.cube)))
-        
+            chosen = np.random.choice(elite)
+            new_population.append(MagicCube(chosen.copy_cube(chosen.cube)))
+            
         return new_population
 
     def crossover(self, population: List[MagicCube]) -> List[MagicCube]:
@@ -66,13 +43,12 @@ class GeneticAlgorithm:
         while len(children) < self.population_size:
             parent1, parent2 = np.random.choice(population[:elite_size], 2, replace=False)
             child_cube = parent1.copy_cube(parent1.cube)
-            n_layers = np.random.randint(1, 4)
-            layers = np.random.choice(5, n_layers, replace=False)
+            layers = np.random.choice(5, np.random.randint(1, 4), replace=False)
             
             for layer in layers:
                 child_cube[layer] = parent2.copy_cube(parent2.cube)[layer]
             children.append(MagicCube(child_cube))
-        
+            
         return children
 
     def mutation(self, population: List[MagicCube]) -> List[MagicCube]:
@@ -80,11 +56,11 @@ class GeneticAlgorithm:
         for cube in population:
             if np.random.random() < self.mutation_rate:
                 mutated_cube = cube
-                n_mutations = np.random.randint(1, 4)
                 
-                for _ in range(n_mutations):
+                for _ in range(np.random.randint(1, 4)):
                     pos1 = (np.random.randint(0, 5), np.random.randint(0, 5), np.random.randint(0, 5))
                     pos2 = (np.random.randint(0, 5), np.random.randint(0, 5), np.random.randint(0, 5))
+                    
                     while pos1 == pos2:
                         pos2 = (np.random.randint(0, 5), np.random.randint(0, 5), np.random.randint(0, 5))
                     new_cube = mutated_cube.swap_positions(mutated_cube.cube, pos1, pos2)
@@ -97,6 +73,7 @@ class GeneticAlgorithm:
 
     def plot_progress(self):
         fig = plt.figure(figsize=(15, 10))
+
         ax1 = plt.subplot(2, 1, 1)
         ax1.plot(self.best_fitness_history, label='Best Value', color='blue')
         ax1.plot(self.avg_fitness_history, label='Population Average', color='red')
@@ -115,15 +92,15 @@ class GeneticAlgorithm:
             f'Final Value: {self.final_fitness}/109'
         )
         
-        plt.figtext(0.15, 0.15, info_text, bbox=dict(facecolor='white', alpha=0.8, edgecolor='gray'), 
-                   fontsize=10, family='monospace')
-        
+        plt.figtext(0.15, 0.15, info_text, bbox=dict(facecolor='white', alpha=0.8, edgecolor='gray'), fontsize=10, family='monospace')
+
         ax2 = plt.subplot(2, 1, 2)
         ax2.axis('off')
+
         plt.tight_layout()
         plt.show()
 
-    def run(self, init_state: MagicCube) -> Tuple[MagicCube, float]:
+    def run(self, init_state: MagicCube):
         start_time = time.time()
         self.initial_fitness = init_state.value
         
@@ -149,15 +126,15 @@ class GeneticAlgorithm:
             if current_best > best_fitness:
                 best_fitness = current_best
                 best_cube = population[fitness.index(current_best)]
-                print(f"Generation {generation + 1}: New best fitness = {best_fitness}")
-            
+                
             if best_fitness == 109:
                 print(f"\nSolution found at generation {generation + 1}")
                 break
-            
+                
             population = self.selection(population, fitness)
             population = self.crossover(population)
             population = self.mutation(population)
+
             best_cube.save_state(self.filepath)
 
         self.execution_time = time.time() - start_time
@@ -169,9 +146,10 @@ class GeneticAlgorithm:
         best_cube.print_cube()
         
         self.plot_progress()
+        
         return best_cube, best_fitness
-
-    def make_file(self, name: str) -> str:
+    
+    def make_file(self, name):
         directory = ".\\save_file"
         os.makedirs(directory, exist_ok=True)
         
@@ -179,9 +157,11 @@ class GeneticAlgorithm:
         while True:
             filename = f"{name}{counter}.txt"
             filepath = os.path.join(directory, filename)
+            
             if not os.path.exists(filepath):
                 break
             counter += 1
+        
         return filepath
 
 def main():
