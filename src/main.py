@@ -7,89 +7,143 @@ from genetic_algorithm import SimpleGeneticAlgorithm
 from MagicCube import MagicCube
 from visualizer import Visualizer
 import os
+from typing import Optional
+import sys
 
+def clear_screen():
+    os.system('cls' if os.name == 'nt' else 'clear')
 
-
-
-menuSTATE = True
-x = 0
-
-while menuSTATE:
-    print("\n\nMENU\n\n")
-    print("1. Start experiment!!")
-    print("2. Visualize!!")
-    print("3. Help??")
-    print("4. Exit:(")
-    print()
-
-    x = input("Enter your number: ")
-    x = int(x)
-    print()
-
-    if x == 1:
-        print("Choose your method:\n")
-        print("1. Steepest Ascent")
-        print("2. Sideways Move")
-        print("3. Stochastic")
-        print("4. Random restart")
-        print("5. Simulated Annealing")
-        print("6. Genetic Algorithm")
-        print()
-
-        y = int(input("Enter your number: "))
-        print()
-        print()
-
-        if y == 1:
+def run_experiment(method: int) -> Optional[str]:
+    try:
+        if method == 1:
+            print("\nRunning Steepest Ascent Hill Climbing...")
             S = steepest_ascent()
             S.run()
-        elif y == 2:
+            return "steepest_ascent.txt"
+        elif method == 2:
+            print("\nRunning Sideways Move Hill Climbing...")
             SW = sideways_move()
             SW.run()
-        elif y == 3:
+            return "sideways_move.txt"
+        elif method == 3:
+            print("\nRunning Stochastic Hill Climbing...")
             SH = stochastic()
             SH.run()
-        elif y == 4:
+            return "stochastic.txt"
+        elif method == 4:
+            print("\nRunning Random Restart Hill Climbing...")
             RR = random_restart_hill_climbing()
             RR.run()
-        elif y == 5:
-            pass
-        elif y == 6:
-            GA = SimpleGeneticAlgorithm(population_size=500, iterations=100)
+            return "random_restart.txt"
+        elif method == 5:
+            print("\nRunning Simulated Annealing...")
+            SA = SimulatedAnnealing()
+            initial_cube = MagicCube()
+            SA.run(initial_cube)
+            return "simulated_annealing.txt"
+        elif method == 6:
+            print("\nRunning Genetic Algorithm...")
+            population_size = int(input("Enter population size (default 500): ") or "500")
+            iterations = int(input("Enter number of iterations (default 100): ") or "100")
+            GA = SimpleGeneticAlgorithm(population_size=population_size, iterations=iterations)
             initial_cube = MagicCube()
             best_cube, best_fitness = GA.run(initial_cube)
+            print(f"\nBest fitness achieved: {best_fitness}/109")
+            return None  # GA doesn't generate visualization file
         else:
-            print("Upss, Wrong number!!\n")
-    elif x == 2:
-        print("Choose your save file:\n")
-        directory = ".\\save_file"
+            print("\nInvalid method number!")
+            return None
+    except Exception as e:
+        print(f"\nError running experiment: {str(e)}")
+        return None
 
-        txt_files = sorted([f for f in os.listdir(directory) if f.endswith(".txt")])
-    
-        if txt_files:
-            print("Save file:\n")
-            for file_name in txt_files:
-                print(f"- {file_name}\n")
-        else:
-            print("File doesnt exist!\n")
-        
-        filename = input("Input save file name: ")
+def list_save_files() -> list:
+    directory = "./save_file"
+    if not os.path.exists(directory):
+        os.makedirs(directory)
+    return sorted([f for f in os.listdir(directory) if f.endswith(".txt")])
 
-        filepath = os.path.join(directory, filename)
-            
-        if os.path.exists(filepath):
-            V = Visualizer()
-            V.load_file(filename)
-            V.visualize()
-        
-    elif x == 3:
-        print("HELPPPPP!!!!!\n")
-        print("1. Experiment with local search")
-        print("2. Visualize your experiment! RUN FIRST! NO GENETIC!!")
-        print("3. Showing help!")
-        print("4. Exit program:(")
-    elif x == 4:
-        menuSTATE = False
-        break
-    else:
-        print("Upss, Wrong number!!\n")
+def main():
+    while True:
+        clear_screen()
+        print("\n=== Magic Cube Local Search Visualization ===\n")
+        print("1. Start Experiment")
+        print("2. Visualize Results")
+        print("3. Help")
+        print("4. Exit")
+        print()
+
+        try:
+            choice = int(input("Enter your choice (1-4): "))
+
+            if choice == 1:
+                clear_screen()
+                print("\nAvailable Methods:")
+                print("1. Steepest Ascent Hill Climbing")
+                print("2. Sideways Move Hill Climbing")
+                print("3. Stochastic Hill Climbing")
+                print("4. Random Restart Hill Climbing")
+                print("5. Simulated Annealing")
+                print("6. Genetic Algorithm")
+                print()
+
+                method = int(input("Choose method (1-6): "))
+                result_file = run_experiment(method)
+                if result_file:
+                    print(f"\nExperiment completed! Results saved to: {result_file}")
+                input("\nPress Enter to continue...")
+
+            elif choice == 2:
+                clear_screen()
+                save_files = list_save_files()
+                
+                if not save_files:
+                    print("\nNo save files found! Run an experiment first.")
+                    input("\nPress Enter to continue...")
+                    continue
+
+                print("\nAvailable save files:")
+                for i, file in enumerate(save_files, 1):
+                    print(f"{i}. {file}")
+                print()
+
+                file_choice = int(input("Choose file number (or 0 to go back): "))
+                if 0 < file_choice <= len(save_files):
+                    V = Visualizer()
+                    V.load_file(save_files[file_choice - 1])
+                    V.visualize()
+
+            elif choice == 3:
+                clear_screen()
+                print("\n=== Help ===")
+                print("\n1. Experiment:")
+                print("   - Choose a local search method to solve the Magic Cube")
+                print("   - Each method will generate a save file (except GA)")
+                print("   - Results will be saved in the 'save_file' directory")
+                print("\n2. Visualize:")
+                print("   - View the step-by-step progress of your experiments")
+                print("   - Requires running an experiment first")
+                print("   - Not available for Genetic Algorithm")
+                print("\n3. Tips:")
+                print("   - Try different methods to compare results")
+                print("   - For GA, adjust population size and iterations")
+                print("   - Use visualization to understand the search process")
+                input("\nPress Enter to continue...")
+
+            elif choice == 4:
+                print("\nThank you for using Magic Cube Solver!")
+                sys.exit(0)
+
+            else:
+                print("\nInvalid choice! Please enter a number between 1 and 4.")
+                input("\nPress Enter to continue...")
+
+        except ValueError:
+            print("\nPlease enter a valid number!")
+            input("\nPress Enter to continue...")
+        except KeyboardInterrupt:
+            print("\n\nExiting program...")
+            sys.exit(0)
+
+if __name__ == "__main__":
+    main()
