@@ -92,4 +92,4 @@ python src/main.py
 - Habib Akhmad Al Farisi (18222029)	    
 - Alfandito Rais Akbar (18222037)	  
 - Winata Tristan (18222061) 
-- PMuhammad Rafi D. (18222069)  	   
+- Muhammad Rafi D. (18222069)  	   
