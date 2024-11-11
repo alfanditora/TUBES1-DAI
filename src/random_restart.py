@@ -27,6 +27,8 @@ class random_restart_hill_climbing:
             self.list_of_value.append(current.value)
             iterations += 1
 
+            current.save_state(self.filepath)
+
         return current, iterations
 
     def run(self) -> None:
@@ -54,7 +56,6 @@ class random_restart_hill_climbing:
             if best_value == 109:
                 break
 
-            current.save_state(self.filepath)
 
         self.end_time = time.time()
 

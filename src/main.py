@@ -39,7 +39,7 @@ def run_experiment(method: int) -> Optional[str]:
             print("\nRunning Simulated Annealing...")
             SA = SimulatedAnnealing()
             initial_cube = MagicCube()
-            SA.run(initial_cube)
+            SA.run_experiments(1)
             return "simulated_annealing.txt"
         elif method == 6:
             print("\nRunning Genetic Algorithm...")

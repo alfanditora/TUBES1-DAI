@@ -41,6 +41,8 @@ class SimulatedAnnealing:
         current = MagicCube(magic_cube.cube)
         self.initial_state = current.cube
         best = MagicCube(current.cube)
+
+        current.print_cube()
         
         temperature = self.initial_temp
         iterations_without_improvement = 0
@@ -75,6 +77,7 @@ class SimulatedAnnealing:
                 else:
                     iterations_without_improvement += 1
                 
+                current.save_state(self.filepath)
                 self.objective_values.append(current.value)
                 self.temperatures.append(temperature)
                 total_iterations += 1
@@ -108,7 +111,7 @@ class SimulatedAnnealing:
                 else:
                     temperature *= self.cooling_rate
 
-            current.save_state(self.filepath)    
+        current.print_cube()
         self.final_state = best.cube
         self.duration = time.time() - start_time
         return best
@@ -128,37 +131,38 @@ class SimulatedAnnealing:
         
         return filepath
 
-def run_experiments(n_experiments=3):
-    all_results = []
-    for exp in range(n_experiments):
-        print(f"\nRunning experiment {exp+1}/{n_experiments}")
+    def run_experiments(self, n_experiments):
+        all_results = []
+        for exp in range(n_experiments):
+            print(f"\nRunning experiment {exp+1}")
+            
+            sa = SimulatedAnnealing(
+                initial_temp=1000000.0,
+                cooling_rate=0.99995,
+                min_temp=0.0001,
+                max_iterations=1000
+            )
+            magic_cube = MagicCube()
+            initial_value = magic_cube.value
+            best_solution = sa.run(magic_cube)
+            result = {
+                'experiment': exp + 1,
+                'initial_state': sa.initial_state,
+                'final_state': sa.final_state,
+                'initial_value': initial_value,
+                'final_value': best_solution.value,
+                'objective_values': sa.objective_values,
+                'temperatures': sa.temperatures,
+                'exp_deltaE_T': sa.exp_deltaE_T,
+                'stuck_count': sa.stuck_count,
+                'duration': sa.duration
+            }
+            all_results.append(result)
+            visualize_experiment(result)
         
-        sa = SimulatedAnnealing(
-            initial_temp=1000000.0,
-            cooling_rate=0.99995,
-            min_temp=0.0001,
-            max_iterations=1000
-        )
-        magic_cube = MagicCube()
-        initial_value = magic_cube.value
-        best_solution = sa.run(magic_cube)
-        result = {
-            'experiment': exp + 1,
-            'initial_state': sa.initial_state,
-            'final_state': sa.final_state,
-            'initial_value': initial_value,
-            'final_value': best_solution.value,
-            'objective_values': sa.objective_values,
-            'temperatures': sa.temperatures,
-            'exp_deltaE_T': sa.exp_deltaE_T,
-            'stuck_count': sa.stuck_count,
-            'duration': sa.duration
-        }
-        all_results.append(result)
-        visualize_experiment(result)
-    
-    visualize_summary(all_results)
-    return all_results
+        if (n_experiments > 1):
+            visualize_summary(all_results)
+            return all_results
 
 def visualize_experiment(result):
     plt.figure(figsize=(15, 10))
@@ -254,6 +258,3 @@ def visualize_summary(results):
     
     plt.tight_layout()
     plt.show()
-
-if __name__ == "__main__":
-    results = run_experiments(3)
