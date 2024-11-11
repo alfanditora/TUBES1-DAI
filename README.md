@@ -18,6 +18,8 @@ TUBES1-DAI/
 │   ├── stochastic.py           # Stochastic Hill Climbing
 │   └── visualizer.py           # Visualization implementation using Flet
 ├── .gitignore
+├── doc/
+│   └── Tubes1_K01_Kelompok39.pdf          # Laporan tugas besar
 └── README.md
 ```
 
