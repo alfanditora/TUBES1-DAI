@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 from typing import List
 from MagicCube import MagicCube
 
-class SimpleGeneticAlgorithm:
+class GeneticAlgorithm:
     def __init__(self, population_size=100, iterations=100):
         self.population_size = population_size
         self.mutation_rate = 0.1
@@ -90,9 +90,7 @@ class SimpleGeneticAlgorithm:
             f'Final Value: {self.final_fitness}/109'
         )
         
-        plt.figtext(0.15, 0.15, info_text, 
-                   bbox=dict(facecolor='white', alpha=0.8, edgecolor='gray'),
-                   fontsize=10, family='monospace')
+        plt.figtext(0.15, 0.15, info_text, bbox=dict(facecolor='white', alpha=0.8, edgecolor='gray'), fontsize=10, family='monospace')
 
         ax2 = plt.subplot(2, 1, 2)
         ax2.axis('off')
@@ -149,7 +147,7 @@ class SimpleGeneticAlgorithm:
         return best_cube, best_fitness
 
 def main():
-    ga = SimpleGeneticAlgorithm(
+    ga = GeneticAlgorithm(
         population_size=500,
         iterations=100
     )
