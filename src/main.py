@@ -3,7 +3,7 @@ from sideways_move import sideways_move
 from stochastic import stochastic
 from random_restart import random_restart_hill_climbing
 from simulated_annealing import SimulatedAnnealing
-from genetic_algorithm import SimpleGeneticAlgorithm
+from genetic_algorithm import GeneticAlgorithm
 from MagicCube import MagicCube
 from visualizer import Visualizer
 import os
@@ -45,7 +45,7 @@ def run_experiment(method: int) -> Optional[str]:
             print("\nRunning Genetic Algorithm...")
             population_size = int(input("Enter population size (default 500): ") or "500")
             iterations = int(input("Enter number of iterations (default 100): ") or "100")
-            GA = SimpleGeneticAlgorithm(population_size=population_size, iterations=iterations)
+            GA = GeneticAlgorithm(population_size=population_size, iterations=iterations)
             initial_cube = MagicCube()
             best_cube, best_fitness = GA.run(initial_cube)
             print(f"\nBest fitness achieved: {best_fitness}/109")
