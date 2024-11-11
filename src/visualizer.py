@@ -22,6 +22,8 @@ class Visualizer(object):
                 content = file.read()
                 states = content.strip().split(';')
                 
+                self.list_of_magiccube = []
+                
                 for state in states:
                     if state.strip():
                         cube = MagicCube()
@@ -35,11 +37,77 @@ class Visualizer(object):
                                     cube.cube[i][j][k] = numbers[j * cube.size + k]
                         
                         self.list_of_magiccube.append(MagicCube(cube.cube))
+                
+                self.current_index = 0
+                self.is_playing = False
+                self.is_reverse = False
+                
+                if self.page:
+                    self.update_visualization(self.list_of_magiccube[0])
+                    self.file_path_text.value = f"Loaded: {filename}"
+                    self.file_path_text.update()
+
+                    self.progress_slider.max = len(self.list_of_magiccube) - 1
+                    self.progress_slider.value = 0
+                    self.progress_slider.disabled = False
+                    self.progress_slider.update()
+                
+                return True
                         
         except FileNotFoundError:
-            print(f"File {filename} does not found")
+            if self.page:
+                self.show_error_dialog(f"File {filename} not found")
+            return False
         except Exception as e:
-            print(f"Error occured: {str(e)}")
+            if self.page:
+                self.show_error_dialog(f"Error occurred: {str(e)}")
+            return False
+
+    def show_error_dialog(self, message):
+        def close_dialog(e):
+            dialog.open = False
+            self.page.update()
+
+        dialog = ft.AlertDialog(
+            modal=True,
+            title=ft.Text("Error"),
+            content=ft.Text(message),
+            actions=[
+                ft.TextButton("OK", on_click=close_dialog),
+            ],
+        )
+
+        self.page.dialog = dialog
+        dialog.open = True
+        self.page.update()
+
+    def pick_files_result(self, e: ft.FilePickerResultEvent):
+        if e.files:
+            file_path = e.files[0].path
+            filename = os.path.basename(file_path)
+            success = self.load_file(filename)
+            
+            if success:
+                # Enable visualization controls
+                self.play_button.disabled = False
+                self.playback_button.disabled = False
+                self.reset_button.disabled = False
+                self.prev_button.disabled = self.current_index <= 0
+                self.next_button.disabled = self.current_index >= len(self.list_of_magiccube) - 1
+                self.progress_slider.disabled = False
+                
+                # Update all controls
+                self.play_button.update()
+                self.playback_button.update()
+                self.reset_button.update()
+                self.prev_button.update()
+                self.next_button.update()
+                self.progress_slider.update()
+    
+    def progress_changed(self, e):
+        # Update current index based on slider value
+        self.current_index = int(e.control.value)
+        self.update_visualization(self.list_of_magiccube[self.current_index])
 
     def create_face(self, numbers, offset_x, offset_y, color, cube_size=200):
         cell_size = cube_size / 5 
@@ -126,6 +194,8 @@ class Visualizer(object):
             if self.is_reverse:
                 if self.current_index > 0:
                     self.current_index -= 1
+                    self.progress_slider.value = self.current_index
+                    self.progress_slider.update()
                     self.update_visualization(self.list_of_magiccube[self.current_index])
                 else:
                     self.is_playing = False
@@ -134,6 +204,8 @@ class Visualizer(object):
             else:
                 if self.current_index < len(self.list_of_magiccube) - 1:
                     self.current_index += 1
+                    self.progress_slider.value = self.current_index
+                    self.progress_slider.update()
                     self.update_visualization(self.list_of_magiccube[self.current_index])
                 else:
                     self.is_playing = False
@@ -176,18 +248,50 @@ class Visualizer(object):
         self.playback_button.text = "Play Backward"
         self.play_button.update()
         self.playback_button.update()
+        self.progress_slider.value = 0
+        self.progress_slider.update()
         self.update_visualization(self.list_of_magiccube[self.current_index])
 
     def speed_changed(self, e):
         self.speed = float(e.control.value)
-        self.speed_text.value = f"Speed: {self.speed:.1f}s"
-        self.speed_text.update()
+        self.speed_information.value = f"Speed: {self.speed:.1f}s"
+        self.speed_information.update()
 
     def main(self, page: ft.Page):
         self.page = page
         page.title = "Magic Cube Sequence Visualization"
         page.padding = 50
         page.theme_mode = "light"
+        
+        # File picking components
+        self.pick_files_dialog = ft.FilePicker(
+            on_result=self.pick_files_result
+        )
+        
+        self.file_path_text = ft.Text(
+            "No file loaded",
+            size=14,
+            color=ft.colors.GREY_700
+        )
+        
+        load_file_button = ft.ElevatedButton(
+            "Load File",
+            icon=ft.icons.UPLOAD_FILE,
+            on_click=lambda _: self.pick_files_dialog.pick_files(
+                allow_multiple=False,
+                allowed_extensions=["txt"]
+            )
+        )
+        
+        file_section = ft.Row(
+            controls=[
+                load_file_button,
+                self.file_path_text
+            ],
+            alignment=ft.MainAxisAlignment.CENTER
+        )
+        
+        page.overlay.append(self.pick_files_dialog)
         
         title = ft.Text(
             "Magic Cube Sequence Visualization",
@@ -198,14 +302,14 @@ class Visualizer(object):
         
         # Info
         self.iteration_information = ft.Text(
-            f"Iteration: 1/{len(self.list_of_magiccube)}",
+            f"Iteration: 0/0",
             size=16,
             weight=ft.FontWeight.BOLD,
             text_align=ft.TextAlign.CENTER,
         )
         
         self.value_information = ft.Text(
-            f"Value: {self.list_of_magiccube[0].value}",
+            f"Value: 0",
             size=16,
             weight=ft.FontWeight.BOLD,
             text_align=ft.TextAlign.CENTER,
@@ -215,6 +319,23 @@ class Visualizer(object):
         self.layer = ft.Stack(
             width=200 * 5,
             height=200,
+        )
+        
+        # Progress slider
+        self.progress_slider = ft.Slider(
+            min=0,
+            max=0,
+            value=0,
+            divisions=None,
+            label="{value}",
+            on_change=self.progress_changed,
+            disabled=True
+        )
+        
+        progress_container = ft.Container(
+            content=self.progress_slider,
+            padding=ft.padding.symmetric(horizontal=20),
+            width=600
         )
         
         # Nav button
@@ -227,25 +348,28 @@ class Visualizer(object):
         self.next_button = ft.IconButton(
             icon=ft.icons.ARROW_FORWARD,
             on_click=self.next_button_clicked,
+            disabled=True
         )
         
         self.play_button = ft.ElevatedButton(
             text="Play Forward",
-            on_click=self.play_button_clicked
+            on_click=self.play_button_clicked,
+            disabled=True
         )
         
         self.playback_button = ft.ElevatedButton(
             text="Play Backward",
-            on_click=self.playback_button_clicked
+            on_click=self.playback_button_clicked,
+            disabled=True
         )
         
-        reset_button = ft.ElevatedButton(
+        self.reset_button = ft.ElevatedButton(
             text="Reset",
-            on_click=self.reset_button_clicked
+            on_click=self.reset_button_clicked,
+            disabled=True
         )
         
-        # Create speed slider
-        self.speed_text = ft.Text(f" Playing Speed: {self.speed:.1f}s")
+        self.speed_information = ft.Text(f" Playing Speed: {self.speed:.1f}s")
         speed_slider = ft.Slider(
             min=0.1,
             max=2.0,
@@ -267,7 +391,7 @@ class Visualizer(object):
             controls=[
                 self.playback_button,
                 self.play_button,
-                reset_button,
+                self.reset_button,
             ],
             alignment=ft.MainAxisAlignment.CENTER
         )
@@ -275,7 +399,7 @@ class Visualizer(object):
         anim_speed = ft.Row(
             controls=[
                 speed_slider,
-                self.speed_text
+                self.speed_information
             ],
             alignment=ft.MainAxisAlignment.CENTER
         )
@@ -295,9 +419,11 @@ class Visualizer(object):
         content = ft.Column(
             controls=[
                 title,
+                file_section,
                 self.iteration_information,
                 self.value_information,
                 self.layer,
+                progress_container,  # Add progress slider
                 navigation,
                 controls,
                 anim_speed,
@@ -308,8 +434,6 @@ class Visualizer(object):
         )
         
         page.add(content)
-        
-        self.update_visualization(self.list_of_magiccube[0])
 
     def visualize(self):
         ft.app(target=self.main)

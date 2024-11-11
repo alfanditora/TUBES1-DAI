@@ -85,33 +85,22 @@ def main():
                 print("4. Random Restart Hill Climbing")
                 print("5. Simulated Annealing")
                 print("6. Genetic Algorithm")
+                print("0. Back to menu")
                 print()
 
                 method = int(input("Choose method (1-6): "))
-                result_file = run_experiment(method)
-                if result_file:
-                    print(f"\nExperiment completed! Results saved to: {result_file}")
-                input("\nPress Enter to continue...")
+
+                if (method != 0):
+                    result_file = run_experiment(method)
+                    if result_file:
+                        print(f"\nExperiment completed! Results saved to: {result_file}")
+                    input("\nPress Enter to continue...")
 
             elif choice == 2:
                 clear_screen()
-                save_files = list_save_files()
-                
-                if not save_files:
-                    print("\nNo save files found! Run an experiment first.")
-                    input("\nPress Enter to continue...")
-                    continue
 
-                print("\nAvailable save files:")
-                for i, file in enumerate(save_files, 1):
-                    print(f"{i}. {file}")
-                print()
-
-                file_choice = int(input("Choose file number (or 0 to go back): "))
-                if 0 < file_choice <= len(save_files):
-                    V = Visualizer()
-                    V.load_file(save_files[file_choice - 1])
-                    V.visualize()
+                V = Visualizer()
+                V.visualize()
 
             elif choice == 3:
                 clear_screen()

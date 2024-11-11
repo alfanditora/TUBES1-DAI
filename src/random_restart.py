@@ -2,6 +2,7 @@ from MagicCube import MagicCube
 import matplotlib.pyplot as plt
 import time
 from typing import List, Tuple
+import os
 
 class random_restart_hill_climbing(object):
     def __init__(self, max_restarts: int = 10):
@@ -11,6 +12,7 @@ class random_restart_hill_climbing(object):
         self.total_iterations = 0
         self.start_time = 0
         self.end_time = 0
+        self.filepath = self.make_file("randomrestart")
 
     def hill_climbing(self, current: MagicCube) -> Tuple[MagicCube, int]:
 
@@ -52,6 +54,8 @@ class random_restart_hill_climbing(object):
             if best_value == 109:
                 break
 
+            current.save_state(self.filepath)
+
         self.end_time = time.time()
 
         print(f"\nFinal state:")
@@ -73,6 +77,21 @@ class random_restart_hill_climbing(object):
         plt.ylabel("Value")
         plt.grid()
         plt.show()
+
+    def make_file(self, name):
+        directory = ".\\save_file"
+        os.makedirs(directory, exist_ok=True)
+        
+        counter = 1
+        while True:
+            filename = f"{name}{counter}.txt"
+            filepath = os.path.join(directory, filename)
+            
+            if not os.path.exists(filepath):
+                break
+            counter += 1
+        
+        return filepath
 
 def run_experiment(num_trials: int = 3) -> None:
 

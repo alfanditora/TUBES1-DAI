@@ -1,6 +1,7 @@
 from MagicCube import MagicCube
 import matplotlib.pyplot as plt
 import time
+import os
 
 class sideways_move(object):
     def __init__(self, max_sideways_moves = 100):
@@ -9,6 +10,7 @@ class sideways_move(object):
         self.iteration = 0
         self.duration = 0
         self.total_sideways = 0
+        self.filepath = self.make_file("sidewaysmove")
     
     def run(self):
         start_time = time.time()
@@ -29,8 +31,9 @@ class sideways_move(object):
             else:
                 sideways_moves = 0
                 
-            self.list_of_value.append(successor.value)
             current = successor
+            self.list_of_value.append(current.value)
+            current.save_state(self.filepath)
             i += 1
 
         current.print_cube()
@@ -65,6 +68,21 @@ class sideways_move(object):
         
         plt.tight_layout()
         plt.show()
+
+    def make_file(self, name):
+        directory = ".\\save_file"
+        os.makedirs(directory, exist_ok=True)
+        
+        counter = 1
+        while True:
+            filename = f"{name}{counter}.txt"
+            filepath = os.path.join(directory, filename)
+            
+            if not os.path.exists(filepath):
+                break
+            counter += 1
+        
+        return filepath
 
 if __name__ == "__main__":
     S = sideways_move()

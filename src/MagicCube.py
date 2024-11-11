@@ -108,26 +108,20 @@ class MagicCube(object):
             # best_pos2 = None
             # total_checked = 0
             
-            for i1 in range(self.size):
-                for j1 in range(self.size):
-                    for k1 in range(self.size):
-                        for i2 in range(self.size):
-                            for j2 in range(self.size):
-                                for k2 in range(self.size):
-                                    if (i1, j1, k1) >= (i2, j2, k2):
-                                        continue
+            for i in range(125):
+                for j in range(i + 1, 125):
                                     
-                                    # total_checked += 1
+                    # total_checked += 1
                                     
-                                    # swap position
-                                    new_cube = self.swap_positions(self.cube, (i1, j1, k1), (i2, j2, k2))
-                                    value = self.calculate_value(new_cube)
+                    # swap position
+                    new_cube = self.swap_positions(self.cube, ((i // 5) // 5, (i // 5) % 5, i % 5), ((j // 5) // 5, (j // 5) % 5, j % 5))
+                    value = self.calculate_value(new_cube)
                                     
-                                    if value > best_value:
-                                        best_value = value
-                                        best_cube = new_cube
-                                        # best_pos1 = (i1, j1, k1)
-                                        # best_pos2 = (i2, j2, k2)
+                    if value > best_value:
+                        best_value = value
+                        best_cube = new_cube
+                        # best_pos1 = ((i // 5) // 5, (i // 5) % 5, i % 5)
+                        # best_pos2 = ((j // 5) // 5, (j // 5) % 5, j % 5)
             
             # print(best_pos1)
             # print(best_pos2)
@@ -144,6 +138,14 @@ class MagicCube(object):
         if self.value == 109:
             print("Congratulations! Magic cube solved!")
 
+    def save_state(self, filepath):
+        with open(filepath, "a") as file:
+            for row in range(self.size):
+                for col in range(self.size):
+                    for depth in range(self.size):
+                        file.write(str(self.cube[row][col][depth]) + " ")
+                file.write("\n")
+            file.write(f";\n")
     
 if __name__ == "__main__":
     M = MagicCube()

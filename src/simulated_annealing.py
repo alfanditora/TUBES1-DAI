@@ -4,6 +4,7 @@ import time
 import matplotlib.pyplot as plt
 import numpy as np
 from MagicCube import MagicCube
+import os
 
 class SimulatedAnnealing:
     def __init__(self, initial_temp=1000000.0, cooling_rate=0.99995, min_temp=0.0001, max_iterations=500000):
@@ -19,6 +20,7 @@ class SimulatedAnnealing:
         self.duration = 0
         self.initial_state = None
         self.final_state = None
+        self.filepath = self.make_file("simulatedannealing")
     
     def accept_probability(self, current_value, neighbor_value, temperature):
         if neighbor_value >= current_value:
@@ -104,10 +106,27 @@ class SimulatedAnnealing:
                 elif best.value > 40:
                     temperature *= (self.cooling_rate ** 0.5)    
                 else:
-                    temperature *= self.cooling_rate             
+                    temperature *= self.cooling_rate
+
+            current.save_state(self.filepath)    
         self.final_state = best.cube
         self.duration = time.time() - start_time
         return best
+
+    def make_file(self, name):
+        directory = ".\\save_file"
+        os.makedirs(directory, exist_ok=True)
+        
+        counter = 1
+        while True:
+            filename = f"{name}{counter}.txt"
+            filepath = os.path.join(directory, filename)
+            
+            if not os.path.exists(filepath):
+                break
+            counter += 1
+        
+        return filepath
 
 def run_experiments(n_experiments=3):
     all_results = []

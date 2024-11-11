@@ -1,6 +1,7 @@
 from MagicCube import MagicCube
 import matplotlib.pyplot as plt
 import time
+import os
 
 class stochastic(object):
     def __init__(self, max_iterations=100000):
@@ -8,6 +9,7 @@ class stochastic(object):
         self.list_of_value = []
         self.iteration = 0
         self.duration = 0
+        self.filepath = self.make_file("stochastic")
     
     def run(self):
         start_time = time.time()
@@ -23,6 +25,7 @@ class stochastic(object):
                 current = successor
                 
             self.list_of_value.append(current.value)
+            current.save_state(self.filepath)
             it += 1
 
         current.print_cube()
@@ -54,6 +57,21 @@ class stochastic(object):
         
         plt.tight_layout()
         plt.show()
+
+    def make_file(self, name):
+        directory = ".\\save_file"
+        os.makedirs(directory, exist_ok=True)
+        
+        counter = 1
+        while True:
+            filename = f"{name}{counter}.txt"
+            filepath = os.path.join(directory, filename)
+            
+            if not os.path.exists(filepath):
+                break
+            counter += 1
+        
+        return filepath
 
 if __name__ == "__main__":
     SH = stochastic()
