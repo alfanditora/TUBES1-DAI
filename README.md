@@ -95,3 +95,16 @@ python src/main.py
 - Alfandito Rais Akbar (18222037)	  
 - Winata Tristan (18222061) 
 - Muhammad Rafi D. (18222069)  	   
+
+## Task Assigned
+
+| Nama Mahasiswa | NIM | No | Tugas yang dikerjakan |
+|----------------|-----|---|-----------------------|
+| Habib Akhmad Al Farisi | 18222029 | 1 | Membuat implementasi algoritma genetic algorithm dan melakukan eksperimen pada genetic algorithm |
+|  | | 2 | Melakukan analisis perbandingan, hasilnya berupa laporan analisis perbandingan pada dokumen |
+| Alfandito Rais Akbar | 18222037 | 1 | Membuat implementasi magic cube, steepest ascent sideways move, stochastic, dan visualizer 'video player' dan melakukan eksperimen pada steepest ascent sideways move, dan stochastic |
+|  | | 2 | Mengerjakan objective function dan implementasi algoritma magic cube, steepest ascent sideways move, stochastic, dan visualizer 'video player' pada dokumen |
+| Winata Tristan | 18222061 | 1 | Membuat implementasi algoritma Random Restart Hill Climbing dan melakukan eksperimen pada Random Restart Hill Climbing |
+|  | | 2 | Mengerjakan implementasi algoritma random restart pada dokumen |
+| Muhammad Rafi Dhiyaulhaq | 18222069 | 1 | Membuat deskripsi persoalan, membuat implementasi algoritma simulated annealing, hasil eksperimen simulated annealing, kesimpulan, dan saran pada dokumen |
+|  | | 2 | Membuat algoritma dan visualisasi untuk simulated annealing, membuat struktur project, membuat video player dalam js, membuat main.py, memperbaiki file yang sudah dibuat (MagicCube, genetic_algorithm, visualizer), dan README |
