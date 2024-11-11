@@ -88,7 +88,6 @@ class Visualizer:
             success = self.load_file(filename)
             
             if success:
-                # Enable visualization controls
                 self.play_button.disabled = False
                 self.playback_button.disabled = False
                 self.reset_button.disabled = False
@@ -96,7 +95,6 @@ class Visualizer:
                 self.next_button.disabled = self.current_index >= len(self.list_of_magiccube) - 1
                 self.progress_slider.disabled = False
                 
-                # Update all controls
                 self.play_button.update()
                 self.playback_button.update()
                 self.reset_button.update()
@@ -105,7 +103,6 @@ class Visualizer:
                 self.progress_slider.update()
     
     def progress_changed(self, e):
-        # Update current index based on slider value
         self.current_index = int(e.control.value)
         self.update_visualization(self.list_of_magiccube[self.current_index])
 
@@ -263,7 +260,6 @@ class Visualizer:
         page.padding = 50
         page.theme_mode = "light"
         
-        # File picking components
         self.pick_files_dialog = ft.FilePicker(
             on_result=self.pick_files_result
         )
@@ -423,7 +419,7 @@ class Visualizer:
                 self.iteration_information,
                 self.value_information,
                 self.layer,
-                progress_container,  # Add progress slider
+                progress_container,
                 navigation,
                 controls,
                 anim_speed,
