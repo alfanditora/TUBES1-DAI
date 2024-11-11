@@ -7,3 +7,6 @@ env/
 __pycache__/
 *.py[cod]
 *$py.class
+
+# save_file
+save_file/
