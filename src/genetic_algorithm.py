@@ -114,7 +114,6 @@ class GeneticAlgorithm:
         print("\nStarting optimization...\n")
         
         for generation in range(self.iterations):
-            print(generation)
             fitness = self.calculate_fitness(population)
             current_best = max(fitness)
             avg_fitness = sum(fitness) / len(fitness)
